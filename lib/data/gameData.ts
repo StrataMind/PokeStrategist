@@ -1,0 +1,33 @@
+export const NATURES = [
+  { name: 'Hardy', plus: null, minus: null },
+  { name: 'Lonely', plus: 'attack', minus: 'defense' },
+  { name: 'Brave', plus: 'attack', minus: 'speed' },
+  { name: 'Adamant', plus: 'attack', minus: 'specialAttack' },
+  { name: 'Naughty', plus: 'attack', minus: 'specialDefense' },
+  { name: 'Bold', plus: 'defense', minus: 'attack' },
+  { name: 'Docile', plus: null, minus: null },
+  { name: 'Relaxed', plus: 'defense', minus: 'speed' },
+  { name: 'Impish', plus: 'defense', minus: 'specialAttack' },
+  { name: 'Lax', plus: 'defense', minus: 'specialDefense' },
+  { name: 'Timid', plus: 'speed', minus: 'attack' },
+  { name: 'Hasty', plus: 'speed', minus: 'defense' },
+  { name: 'Serious', plus: null, minus: null },
+  { name: 'Jolly', plus: 'speed', minus: 'specialAttack' },
+  { name: 'Naive', plus: 'speed', minus: 'specialDefense' },
+  { name: 'Modest', plus: 'specialAttack', minus: 'attack' },
+  { name: 'Mild', plus: 'specialAttack', minus: 'defense' },
+  { name: 'Quiet', plus: 'specialAttack', minus: 'speed' },
+  { name: 'Bashful', plus: null, minus: null },
+  { name: 'Rash', plus: 'specialAttack', minus: 'specialDefense' },
+  { name: 'Calm', plus: 'specialDefense', minus: 'attack' },
+  { name: 'Gentle', plus: 'specialDefense', minus: 'defense' },
+  { name: 'Sassy', plus: 'specialDefense', minus: 'speed' },
+  { name: 'Careful', plus: 'specialDefense', minus: 'specialAttack' },
+  { name: 'Quirky', plus: null, minus: null },
+];
+
+export const POPULAR_ITEMS = [
+  'Leftovers', 'Life Orb', 'Choice Band', 'Choice Scarf', 'Choice Specs',
+  'Focus Sash', 'Assault Vest', 'Rocky Helmet', 'Heavy-Duty Boots',
+  'Weakness Policy', 'Sitrus Berry', 'Lum Berry', 'Mental Herb',
+];
