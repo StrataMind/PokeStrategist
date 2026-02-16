@@ -57,11 +57,13 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen">
-      <header className="bg-white shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">⚡ PokeStrategist</h1>
-          <p className="text-gray-600 mt-1">Build Your Perfect Team</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">
+            ⚡ PokeStrategist
+          </h1>
+          <p className="text-gray-600 mt-2 font-medium">Build Your Perfect Team</p>
         </div>
       </header>
 
@@ -71,14 +73,14 @@ export default function Home() {
           <div className="flex gap-2">
             <button
               onClick={() => setShowImport(true)}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+              className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2.5 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
             >
               <Upload size={20} />
               Import
             </button>
             <button
               onClick={() => setShowCreate(!showCreate)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
             >
               <Plus size={20} />
               New Team
@@ -118,7 +120,7 @@ export default function Home() {
         )}
 
         {showCreate && (
-          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <div className="bg-white p-6 rounded-xl shadow-lg mb-6 border border-gray-100 animate-slide-up">
             <h3 className="text-lg font-semibold mb-4">Create New Team</h3>
             <div className="space-y-4">
               <div>
@@ -162,10 +164,10 @@ export default function Home() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {teams.map((team) => (
-            <div key={team.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
+            <div key={team.id} className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 animate-scale-in">
               <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2">{team.name}</h3>
-                <p className="text-gray-600 text-sm mb-2">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">{team.name}</h3>
+                <p className="text-gray-500 text-sm font-medium mb-2">
                   {team.pokemon.length}/{team.maxSize} Pokemon
                 </p>
                 {team.pokemon.length > 0 && (
@@ -180,11 +182,11 @@ export default function Home() {
                   </div>
                 )}
                 
-                <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="grid grid-cols-3 gap-3 mb-4">
                   {Array.from({ length: team.maxSize }).map((_, i) => (
                     <div
                       key={i}
-                      className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center"
+                      className="aspect-square border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
                     >
                       {team.pokemon[i] ? (
                         <img
@@ -202,36 +204,36 @@ export default function Home() {
                 <div className="flex gap-2">
                   <Link
                     href={`/team/${team.id}`}
-                    className="flex-1 bg-blue-600 text-white text-center py-2 rounded-lg hover:bg-blue-700"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
                   >
                     Edit
                   </Link>
                   <Link
                     href={`/analytics/${team.id}`}
-                    className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700"
+                    className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-3 py-2.5 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-md hover:shadow-lg"
                     title="Analytics"
                   >
                     📊
                   </Link>
                   <button
                     onClick={() => handleExport(team.id)}
-                    className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700"
+                    className="bg-gradient-to-r from-green-600 to-green-700 text-white p-2.5 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md hover:shadow-lg"
                     title="Export"
                   >
                     <Download size={20} />
                   </button>
                   <button
                     onClick={() => duplicateTeam(team.id)}
-                    className="bg-gray-200 p-2 rounded-lg hover:bg-gray-300"
+                    className="bg-gray-200 p-2.5 rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-sm hover:shadow-md"
                     title="Duplicate"
                   >
                     <Copy size={20} />
                   </button>
                   <button
                     onClick={() => handleDelete(team.id)}
-                    className={`p-2 rounded-lg ${
+                    className={`p-2.5 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md ${
                       deleteConfirm === team.id
-                        ? 'bg-red-600 text-white'
+                        ? 'bg-red-600 text-white scale-110'
                         : 'bg-gray-200 hover:bg-gray-300'
                     }`}
                     title={deleteConfirm === team.id ? 'Click again to confirm' : 'Delete'}
