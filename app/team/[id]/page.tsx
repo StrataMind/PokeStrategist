@@ -13,13 +13,18 @@ import { NATURES, POPULAR_ITEMS } from '@/lib/data/gameData';
 export default function TeamEditor() {
   const params = useParams();
   const router = useRouter();
-  const { teams, setCurrentTeam, addPokemon, removePokemon, reorderPokemon } = useTeamStore();
+  const { teams, setCurrentTeam, addPokemon, removePokemon, reorderPokemon, updatePokemon } = useTeamStore();
   const [team, setTeam] = useState(teams.find(t => t.id === params.id));
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Pokemon[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [editingPokemon, setEditingPokemon] = useState<TeamPokemon | null>(null);
+  const [nickname, setNickname] = useState('');
+  const [selectedAbility, setSelectedAbility] = useState('');
+  const [selectedNature, setSelectedNature] = useState('');
+  const [selectedItem, setSelectedItem] = useState('');
+  const [selectedMoves, setSelectedMoves] = useState<string[]>([]);
 
   useEffect(() => {
     const currentTeam = teams.find(t => t.id === params.id);
@@ -30,6 +35,16 @@ export default function TeamEditor() {
       setCurrentTeam(params.id as string);
     }
   }, [teams, params.id, router, setCurrentTeam]);
+
+  useEffect(() => {
+    if (editingPokemon) {
+      setNickname(editingPokemon.nickname || '');
+      setSelectedAbility(editingPokemon.selectedAbility || '');
+      setSelectedNature(editingPokemon.nature || '');
+      setSelectedItem(editingPokemon.item || '');
+      setSelectedMoves(editingPokemon.selectedMoves || []);
+    }
+  }, [editingPokemon]);
 
   const handleSearch = async () => {
     if (searchQuery.trim()) {
@@ -44,6 +59,27 @@ export default function TeamEditor() {
       setShowSearch(false);
       setSearchQuery('');
       setSearchResults([]);
+    }
+  };
+
+  const handleSavePokemon = () => {
+    if (editingPokemon && team) {
+      updatePokemon(team.id, editingPokemon.position, {
+        nickname,
+        selectedAbility,
+        nature: selectedNature,
+        item: selectedItem,
+        selectedMoves,
+      });
+      setEditingPokemon(null);
+    }
+  };
+
+  const handleMoveToggle = (moveName: string) => {
+    if (selectedMoves.includes(moveName)) {
+      setSelectedMoves(selectedMoves.filter(m => m !== moveName));
+    } else if (selectedMoves.length < 4) {
+      setSelectedMoves([...selectedMoves, moveName]);
     }
   };
 
@@ -127,6 +163,13 @@ export default function TeamEditor() {
                     {pokemon.item && (
                       <p className="text-xs text-center text-gray-600">@ {pokemon.item}</p>
                     )}
+                    {pokemon.selectedMoves && pokemon.selectedMoves.length > 0 && (
+                      <div className="mt-2 text-xs text-gray-600">
+                        {pokemon.selectedMoves.map(move => (
+                          <div key={move} className="capitalize">{move.replace('-', ' ')}</div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <button
@@ -204,28 +247,38 @@ export default function TeamEditor() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Nickname</label>
+                  <label className="block text-sm font-medium mb-1">Nickname (max 12 chars)</label>
                   <input
                     type="text"
                     maxLength={12}
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
                     placeholder={editingPokemon.name}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none capitalize"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Ability</label>
-                  <select className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                  <select 
+                    value={selectedAbility}
+                    onChange={(e) => setSelectedAbility(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none capitalize"
+                  >
                     <option value="">Select ability...</option>
                     {editingPokemon.abilities.map(ability => (
-                      <option key={ability} value={ability}>{ability}</option>
+                      <option key={ability} value={ability} className="capitalize">{ability.replace('-', ' ')}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Nature</label>
-                  <select className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                  <select 
+                    value={selectedNature}
+                    onChange={(e) => setSelectedNature(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
                     <option value="">Select nature...</option>
                     {NATURES.map(nature => (
                       <option key={nature.name} value={nature.name}>
@@ -237,7 +290,11 @@ export default function TeamEditor() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Held Item</label>
-                  <select className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                  <select 
+                    value={selectedItem}
+                    onChange={(e) => setSelectedItem(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
                     <option value="">Select item...</option>
                     {POPULAR_ITEMS.map(item => (
                       <option key={item} value={item}>{item}</option>
@@ -246,11 +303,17 @@ export default function TeamEditor() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Moves (Select up to 4)</label>
+                  <label className="block text-sm font-medium mb-1">Moves (Select up to 4) - {selectedMoves.length}/4</label>
                   <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-lg p-2">
-                    {editingPokemon.moves?.slice(0, 20).map(move => (
-                      <label key={move.name} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
-                        <input type="checkbox" className="rounded" />
+                    {editingPokemon.moves?.slice(0, 30).map(move => (
+                      <label key={move.name} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="rounded" 
+                          checked={selectedMoves.includes(move.name)}
+                          onChange={() => handleMoveToggle(move.name)}
+                          disabled={!selectedMoves.includes(move.name) && selectedMoves.length >= 4}
+                        />
                         <span className="text-sm capitalize">{move.name.replace('-', ' ')}</span>
                       </label>
                     ))}
@@ -258,7 +321,7 @@ export default function TeamEditor() {
                 </div>
 
                 <button
-                  onClick={() => setEditingPokemon(null)}
+                  onClick={handleSavePokemon}
                   className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
                 >
                   Save Changes
