@@ -2,13 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useTeamStore } from '@/lib/store/teamStore';
-import { Plus, Trash2, Copy, User, LogOut } from 'lucide-react';
+import { Plus, Trash2, Copy } from 'lucide-react';
 import Link from 'next/link';
-import { useSession, signOut } from 'next-auth/react';
 
 export default function Home() {
   const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam } = useTeamStore();
-  const { data: session, status } = useSession();
   const [showCreate, setShowCreate] = useState(false);
   const [teamName, setTeamName] = useState('');
   const [teamSize, setTeamSize] = useState(6);
@@ -40,45 +38,9 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">⚡ PokeStrategist</h1>
-            <p className="text-gray-600 mt-1">Build Your Perfect Team</p>
-          </div>
-          <div className="flex items-center gap-4">
-            {status === 'loading' ? (
-              <div className="text-gray-500">Loading...</div>
-            ) : session ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <User size={20} className="text-gray-600" />
-                  <span className="text-gray-700">{session.user?.name || session.user?.email}</span>
-                </div>
-                <button
-                  onClick={() => signOut()}
-                  className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-                >
-                  <LogOut size={20} />
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/auth/signin"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/auth/signup"
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-                >
-                  Sign Up
-                </Link>
-              </>
-            )}
-          </div>
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <h1 className="text-3xl font-bold text-gray-900">⚡ PokeStrategist</h1>
+          <p className="text-gray-600 mt-1">Build Your Perfect Team</p>
         </div>
       </header>
 
