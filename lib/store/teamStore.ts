@@ -13,6 +13,8 @@ interface TeamStore {
   removePokemon: (teamId: string, position: number) => void;
   reorderPokemon: (teamId: string, fromPos: number, toPos: number) => void;
   updatePokemon: (teamId: string, position: number, updates: Partial<TeamPokemon>) => void;
+  exportTeam: (teamId: string) => string;
+  importTeam: (jsonData: string) => void;
 }
 
 export const useTeamStore = create<TeamStore>((set, get) => ({
@@ -132,5 +134,25 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     });
     set({ teams });
     localStorage.setItem('teams', JSON.stringify(teams));
+  },
+
+  exportTeam: (teamId: string) => {
+    const team = get().teams.find(t => t.id === teamId);
+    if (!team) return '';
+    return JSON.stringify(team, null, 2);
+  },
+
+  importTeam: (jsonData: string) => {
+    try {
+      const team = JSON.parse(jsonData);
+      team.id = Date.now().toString();
+      team.createdAt = new Date().toISOString();
+      team.updatedAt = new Date().toISOString();
+      const teams = [...get().teams, team];
+      set({ teams });
+      localStorage.setItem('teams', JSON.stringify(teams));
+    } catch (error) {
+      console.error('Invalid team data');
+    }
   },
 }));
