@@ -194,6 +194,13 @@ export default function Home() {
                   >
                     Edit
                   </Link>
+                  <Link
+                    href={`/analytics/${team.id}`}
+                    className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700"
+                    title="Analytics"
+                  >
+                    📊
+                  </Link>
                   <button
                     onClick={() => handleExport(team.id)}
                     className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700"
