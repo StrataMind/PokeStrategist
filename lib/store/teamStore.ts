@@ -12,6 +12,7 @@ interface TeamStore {
   addPokemon: (teamId: string, pokemon: TeamPokemon) => void;
   removePokemon: (teamId: string, position: number) => void;
   reorderPokemon: (teamId: string, fromPos: number, toPos: number) => void;
+  updatePokemon: (teamId: string, position: number, updates: Partial<TeamPokemon>) => void;
 }
 
 export const useTeamStore = create<TeamStore>((set, get) => ({
@@ -107,6 +108,23 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
         return {
           ...team,
           pokemon: pokemon.map((p, i) => ({ ...p, position: i })),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return team;
+    });
+    set({ teams });
+    localStorage.setItem('teams', JSON.stringify(teams));
+  },
+
+  updatePokemon: (teamId: string, position: number, updates: Partial<TeamPokemon>) => {
+    const teams = get().teams.map(team => {
+      if (team.id === teamId) {
+        return {
+          ...team,
+          pokemon: team.pokemon.map(p => 
+            p.position === position ? { ...p, ...updates } : p
+          ),
           updatedAt: new Date().toISOString(),
         };
       }
