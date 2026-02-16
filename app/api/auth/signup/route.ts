@@ -30,9 +30,10 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ id: user.id, email: user.email });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Signup error:', error);
     return NextResponse.json(
-      { error: 'Something went wrong' },
+      { error: error.message || 'Something went wrong' },
       { status: 500 }
     );
   }
