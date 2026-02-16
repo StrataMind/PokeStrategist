@@ -1,16 +1,14 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useEffect, useState } from 'react';
-import { useSession, signOut } from 'next-auth/react';
 import { useTeamStore } from '@/lib/store/teamStore';
-import { Plus, Trash2, Copy, LogOut, User } from 'lucide-react';
+import { Plus, Trash2, Copy, User, LogOut } from 'lucide-react';
 import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function Home() {
-  const { data: session, status } = useSession();
   const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam } = useTeamStore();
+  const { data: session, status } = useSession();
   const [showCreate, setShowCreate] = useState(false);
   const [teamName, setTeamName] = useState('');
   const [teamSize, setTeamSize] = useState(6);
