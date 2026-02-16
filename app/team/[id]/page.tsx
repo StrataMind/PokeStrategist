@@ -20,6 +20,7 @@ export default function TeamEditor() {
   const [searchResults, setSearchResults] = useState<Pokemon[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [editingPokemon, setEditingPokemon] = useState<TeamPokemon | null>(null);
+  const [viewingPokemon, setViewingPokemon] = useState<TeamPokemon | null>(null);
   const [nickname, setNickname] = useState('');
   const [selectedAbility, setSelectedAbility] = useState('');
   const [selectedNature, setSelectedNature] = useState('');
@@ -133,7 +134,12 @@ export default function TeamEditor() {
                 {pokemon ? (
                   <div>
                     <div className="relative">
-                      <img src={pokemon.sprite} alt={pokemon.name} className="w-full h-32 object-contain" />
+                      <img 
+                        src={pokemon.sprite} 
+                        alt={pokemon.name} 
+                        className="w-full h-32 object-contain cursor-pointer hover:scale-110 transition"
+                        onClick={() => setViewingPokemon(pokemon)}
+                      />
                       <button
                         onClick={() => removePokemon(team.id, i)}
                         className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
@@ -326,6 +332,85 @@ export default function TeamEditor() {
                 >
                   Save Changes
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {viewingPokemon && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold capitalize">{viewingPokemon.nickname || viewingPokemon.name}</h2>
+                <button onClick={() => setViewingPokemon(null)} className="text-gray-500 hover:text-gray-700">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <img src={viewingPokemon.sprite} alt={viewingPokemon.name} className="w-48 h-48 mx-auto object-contain" />
+
+              <div className="space-y-3 mt-4">
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-600 mb-2">Types</h3>
+                  <div className="flex gap-2">
+                    {viewingPokemon.types.map(type => (
+                      <span key={type} className={`${getTypeColor(type)} text-white px-3 py-1 rounded capitalize`}>
+                        {type}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-600 mb-2">Base Stats</h3>
+                  <div className="space-y-2">
+                    {Object.entries(viewingPokemon.stats).map(([stat, value]) => (
+                      <div key={stat}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="capitalize">{stat.replace(/([A-Z])/g, ' $1')}</span>
+                          <span className="font-bold">{value}</span>
+                        </div>
+                        <div className="bg-gray-200 rounded-full h-2">
+                          <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${(value / 150) * 100}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {viewingPokemon.selectedAbility && (
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-600">Ability</h3>
+                    <p className="capitalize">{viewingPokemon.selectedAbility.replace('-', ' ')}</p>
+                  </div>
+                )}
+
+                {viewingPokemon.nature && (
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-600">Nature</h3>
+                    <p>{viewingPokemon.nature}</p>
+                  </div>
+                )}
+
+                {viewingPokemon.item && (
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-600">Held Item</h3>
+                    <p>{viewingPokemon.item}</p>
+                  </div>
+                )}
+
+                {viewingPokemon.selectedMoves && viewingPokemon.selectedMoves.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-600 mb-1">Moves</h3>
+                    <div className="space-y-1">
+                      {viewingPokemon.selectedMoves.map(move => (
+                        <div key={move} className="text-sm capitalize bg-gray-100 px-2 py-1 rounded">
+                          {move.replace('-', ' ')}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
