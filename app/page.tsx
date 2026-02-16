@@ -6,6 +6,8 @@ import { useTeamStore } from '@/lib/store/teamStore';
 import { Plus, Trash2, Copy, LogOut, User } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   const { data: session, status } = useSession();
   const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam } = useTeamStore();
