@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "PokeStrategist - Build Your Perfect Team",
   description: "Create, analyze, and share competitive Pokemon teams",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

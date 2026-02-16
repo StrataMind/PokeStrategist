@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTeamStore } from '@/lib/store/teamStore';
 import { Plus, Trash2, Copy, Download, Upload } from 'lucide-react';
 import Link from 'next/link';
+import { getTypeColor } from '@/lib/utils';
 
 export default function Home() {
   const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam, exportTeam, importTeam } = useTeamStore();
@@ -164,9 +165,20 @@ export default function Home() {
             <div key={team.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
               <div className="p-6">
                 <h3 className="text-xl font-semibold mb-2">{team.name}</h3>
-                <p className="text-gray-600 text-sm mb-4">
+                <p className="text-gray-600 text-sm mb-2">
                   {team.pokemon.length}/{team.maxSize} Pokemon
                 </p>
+                {team.pokemon.length > 0 && (
+                  <div className="text-xs text-gray-500 mb-4">
+                    <div className="flex gap-1 flex-wrap">
+                      {Array.from(new Set(team.pokemon.flatMap(p => p.types))).map(type => (
+                        <span key={type} className={`${getTypeColor(type)} text-white px-2 py-0.5 rounded capitalize`}>
+                          {type}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   {Array.from({ length: team.maxSize }).map((_, i) => (
@@ -240,6 +252,22 @@ export default function Home() {
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
             >
               Get Started
+            </button>
+          </div>
+        )}
+
+        {teams.length > 0 && (
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => {
+                if (confirm('Are you sure you want to clear all teams? This cannot be undone.')) {
+                  localStorage.clear();
+                  window.location.reload();
+                }
+              }}
+              className="text-red-600 hover:text-red-700 text-sm"
+            >
+              Clear All Data
             </button>
           </div>
         )}
