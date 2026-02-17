@@ -131,7 +131,6 @@ export default function Home() {
               EV/IV Calc
             </Link>
             {teams.length > 0 && (
-            {teams.length > 0 && (
               <button
                 onClick={handleExportAll}
                 className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 font-bold shadow-md hover:shadow-lg"
