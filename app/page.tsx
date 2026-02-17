@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTeamStore } from '@/lib/store/teamStore';
-import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon } from 'lucide-react';
+import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon, Calculator, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { getTypeColor } from '@/lib/utils';
 
@@ -116,6 +116,21 @@ export default function Home() {
             </select>
           </div>
           <div className="flex gap-3">
+            <Link
+              href="/calculator"
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 font-bold shadow-md hover:shadow-lg"
+            >
+              <Calculator size={18} />
+              Damage Calc
+            </Link>
+            <Link
+              href="/ev-iv"
+              className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 text-white px-6 py-3 rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all duration-200 font-bold shadow-md hover:shadow-lg"
+            >
+              <TrendingUp size={18} />
+              EV/IV Calc
+            </Link>
+            {teams.length > 0 && (
             {teams.length > 0 && (
               <button
                 onClick={handleExportAll}
