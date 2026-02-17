@@ -8,6 +8,7 @@ interface TeamStore {
   createTeam: (name: string, maxSize: number) => void;
   deleteTeam: (id: string) => void;
   duplicateTeam: (id: string) => void;
+  toggleFavorite: (id: string) => void;
   setCurrentTeam: (id: string) => void;
   addPokemon: (teamId: string, pokemon: TeamPokemon) => void;
   removePokemon: (teamId: string, position: number) => void;
@@ -64,6 +65,14 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       set({ teams });
       localStorage.setItem('teams', JSON.stringify(teams));
     }
+  },
+
+  toggleFavorite: (id: string) => {
+    const teams = get().teams.map(t => 
+      t.id === id ? { ...t, favorite: !t.favorite } : t
+    );
+    set({ teams });
+    localStorage.setItem('teams', JSON.stringify(teams));
   },
 
   setCurrentTeam: (id: string) => {

@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useTeamStore } from '@/lib/store/teamStore';
 import { searchPokemon } from '@/lib/api/pokeapi';
 import { Pokemon, TeamPokemon } from '@/types/pokemon';
-import { ArrowLeft, Search, X, Settings } from 'lucide-react';
+import { ArrowLeft, Search, X, Settings, Filter } from 'lucide-react';
 import Link from 'next/link';
 import { getTypeColor } from '@/lib/utils';
 import { NATURES, POPULAR_ITEMS } from '@/lib/data/gameData';
@@ -26,6 +26,7 @@ export default function TeamEditor() {
   const [selectedNature, setSelectedNature] = useState('');
   const [selectedItem, setSelectedItem] = useState('');
   const [selectedMoves, setSelectedMoves] = useState<string[]>([]);
+  const [filterType, setFilterType] = useState<string>('');
 
   useEffect(() => {
     const currentTeam = teams.find(t => t.id === params.id);
@@ -117,9 +118,24 @@ export default function TeamEditor() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-10">
+        {team.pokemon.length > 0 && (
+          <div className="mb-6">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              <option value="">All Types</option>
+              {Array.from(new Set(team.pokemon.flatMap(p => p.types))).map(type => (
+                <option key={type} value={type} className="capitalize">{type}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
           {Array.from({ length: team.maxSize }).map((_, i) => {
             const pokemon = team.pokemon.find(p => p.position === i);
+            if (filterType && pokemon && !pokemon.types.includes(filterType)) return null;
             return (
               <div
                 key={i}

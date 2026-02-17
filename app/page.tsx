@@ -2,18 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { useTeamStore } from '@/lib/store/teamStore';
-import { Plus, Trash2, Copy, Download, Upload } from 'lucide-react';
+import { Plus, Trash2, Copy, Download, Upload, Star, ArrowUpDown } from 'lucide-react';
 import Link from 'next/link';
 import { getTypeColor } from '@/lib/utils';
 
 export default function Home() {
-  const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam, exportTeam, importTeam } = useTeamStore();
+  const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam, toggleFavorite, exportTeam, importTeam } = useTeamStore();
   const [showCreate, setShowCreate] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [importData, setImportData] = useState('');
   const [teamName, setTeamName] = useState('');
   const [teamSize, setTeamSize] = useState(6);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'name' | 'date' | 'favorite'>('date');
 
   useEffect(() => {
     loadTeams();
@@ -56,6 +57,12 @@ export default function Home() {
     }
   };
 
+  const sortedTeams = [...teams].sort((a, b) => {
+    if (sortBy === 'favorite') return (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0);
+    if (sortBy === 'name') return a.name.localeCompare(b.name);
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
@@ -69,7 +76,18 @@ export default function Home() {
 
       <main className="max-w-7xl mx-auto px-6 py-10">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">My Teams <span className="text-gray-500 font-normal">({teams.length})</span></h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-3xl font-bold text-gray-900">My Teams <span className="text-gray-500 font-normal">({teams.length})</span></h2>
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-3 py-1.5 border-2 border-gray-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              <option value="date">Latest</option>
+              <option value="name">Name</option>
+              <option value="favorite">Favorites</option>
+            </select>
+          </div>
           <div className="flex gap-3">
             <button
               onClick={() => setShowImport(true)}
@@ -163,13 +181,30 @@ export default function Home() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {teams.map((team) => (
+          {sortedTeams.map((team) => {
+            const totalStats = team.pokemon.reduce((sum, p) => 
+              sum + Object.values(p.stats).reduce((a, b) => a + b, 0), 0
+            );
+            const avgStat = team.pokemon.length > 0 ? Math.round(totalStats / team.pokemon.length) : 0;
+            
+            return (
             <div key={team.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border animate-scale-in">
               <div className="p-6">
-                <h3 className="text-2xl font-bold text-gray-900 mb-1">{team.name}</h3>
-                <p className="text-gray-500 text-sm mb-3">
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="text-2xl font-bold text-gray-900">{team.name}</h3>
+                  <button
+                    onClick={() => toggleFavorite(team.id)}
+                    className="text-yellow-500 hover:scale-110 transition-transform"
+                  >
+                    <Star size={20} fill={team.favorite ? 'currentColor' : 'none'} />
+                  </button>
+                </div>
+                <p className="text-gray-500 text-sm mb-1">
                   {team.pokemon.length}/{team.maxSize} Pokemon
                 </p>
+                {avgStat > 0 && (
+                  <p className="text-xs text-gray-500 mb-3">Avg Stats: {avgStat}</p>
+                )}
                 {team.pokemon.length > 0 && (
                   <div className="text-xs text-gray-500 mb-4">
                     <div className="flex gap-1 flex-wrap">
@@ -243,7 +278,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          ))}
+          );})}
         </div>
 
         {teams.length === 0 && !showCreate && (

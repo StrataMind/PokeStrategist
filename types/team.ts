@@ -7,6 +7,7 @@ export interface Team {
   pokemon: TeamPokemon[];
   createdAt: string;
   updatedAt: string;
+  favorite?: boolean;
 }
 
 export type { TeamPokemon };
