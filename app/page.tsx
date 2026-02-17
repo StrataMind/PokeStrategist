@@ -325,6 +325,13 @@ export default function Home() {
                     Edit
                   </Link>
                   <Link
+                    href={`/battle/${team.id}`}
+                    className="bg-gradient-to-br from-orange-100 to-orange-50 text-orange-700 px-4 py-3 rounded-xl hover:from-orange-200 hover:to-orange-100 transition-all duration-200 border-2 border-orange-200 font-bold"
+                    title="Battle"
+                  >
+                    ⚔️
+                  </Link>
+                  <Link
                     href={`/analytics/${team.id}`}
                     className="bg-gradient-to-br from-purple-100 to-purple-50 text-purple-700 px-4 py-3 rounded-xl hover:from-purple-200 hover:to-purple-100 transition-all duration-200 border-2 border-purple-200 font-bold"
                     title="Analytics"
