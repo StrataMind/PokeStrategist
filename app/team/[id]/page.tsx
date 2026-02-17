@@ -49,6 +49,8 @@ export default function TeamEditor() {
           speed: data.stats[5].base_stat,
         },
         moves: data.moves.slice(0, 30).map((m: any) => ({ name: m.move.name })),
+        height: data.height,
+        weight: data.weight,
         position: team.pokemon.length,
       };
       addPokemon(team.id, pokemon);
