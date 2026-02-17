@@ -160,26 +160,25 @@ export default function TeamEditor() {
   if (!team) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50">
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-6 flex items-center gap-4">
-          <Link href="/" className="text-gray-600 hover:text-blue-600 transition-colors p-2 hover:bg-blue-50 rounded-xl">
-            <ArrowLeft size={24} />
-          </Link>
-          <div>
-            <h1 className="text-3xl font-black text-gray-900">{team.name}</h1>
-            <p className="text-sm text-gray-600 mt-1 font-bold">{team.pokemon.length}/{team.maxSize} Pokemon</p>
-          </div>
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-white border-b border-gray-200 h-16 flex items-center px-8">
+        <Link href="/" className="text-gray-600 hover:text-blue-900 transition-colors">
+          <ArrowLeft size={20} />
+        </Link>
+        <div className="ml-4">
+          <h1 className="text-xl font-semibold text-gray-900">{team.name}</h1>
+          <p className="text-xs text-gray-600">{team.pokemon.length}/{team.maxSize} Pokemon</p>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-12">
-        <div className="flex justify-between items-center mb-8">
+      <main className="max-w-7xl mx-auto px-8 py-6">
+        <div className="flex justify-between items-center mb-6">
           {team.pokemon.length > 0 && (
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-5 py-3 bg-white border-2 border-gray-200 rounded-xl font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm hover:border-gray-300 transition-colors"
+              className="px-3 py-2 bg-white border border-gray-300 font-medium text-sm text-gray-700"
+              style={{ borderRadius: '4px' }}
             >
               <option value="">All Types</option>
               {Array.from(new Set(team.pokemon.flatMap(p => p.types))).map(type => (
@@ -190,9 +189,10 @@ export default function TeamEditor() {
           {team.pokemon.length < team.maxSize && (
             <button
               onClick={handleRandomTeam}
-              className="ml-auto flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 font-bold shadow-md hover:shadow-lg"
+              className="ml-auto flex items-center gap-2 bg-blue-900 text-white px-4 py-2 font-medium text-sm"
+              style={{ borderRadius: '4px' }}
             >
-              <Shuffle size={18} />
+              <Shuffle size={16} />
               Random Pokemon
             </button>
           )}
@@ -208,9 +208,10 @@ export default function TeamEditor() {
                 onDragStart={() => pokemon && handleDragStart(i)}
                 onDragOver={(e) => handleDragOver(e, i)}
                 onDragEnd={handleDragEnd}
-                className={`bg-white rounded-2xl p-6 border-2 ${
-                  pokemon ? 'border-gray-200 cursor-move hover:border-blue-300 hover:shadow-lg' : 'border-dashed border-gray-200 hover:border-blue-200'
-                } transition-all duration-200 shadow-sm`}
+                className={`bg-white p-5 border ${
+                  pokemon ? 'border-gray-200 cursor-move hover:border-blue-900' : 'border-dashed border-gray-300'
+                } transition-colors`}
+                style={{ borderRadius: '4px' }}
               >
                 {pokemon ? (
                   <div>
@@ -223,18 +224,20 @@ export default function TeamEditor() {
                       />
                       <button
                         onClick={() => removePokemon(team.id, i)}
-                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-md hover:scale-110 transition-transform"
+                        className="absolute top-0 right-0 bg-red-600 text-white p-1"
+                        style={{ borderRadius: '4px' }}
                       >
-                        <X size={16} />
+                        <X size={14} />
                       </button>
                       <button
                         onClick={() => setEditingPokemon(pokemon)}
-                        className="absolute top-0 left-0 bg-blue-500 text-white rounded-full p-1.5 hover:bg-blue-600 shadow-md hover:scale-110 transition-transform"
+                        className="absolute top-0 left-0 bg-blue-900 text-white p-1"
+                        style={{ borderRadius: '4px' }}
                       >
-                        <Settings size={16} />
+                        <Settings size={14} />
                       </button>
                     </div>
-                    <h3 className="font-black capitalize text-center mt-3 text-gray-900 text-xl">
+                    <h3 className="font-semibold capitalize text-center mt-2 text-gray-900">
                       {pokemon.nickname || pokemon.name}
                     </h3>
                     <div className="flex gap-1 justify-center mt-2">
@@ -261,9 +264,9 @@ export default function TeamEditor() {
                 ) : (
                   <button
                     onClick={() => setShowSearch(true)}
-                    className="w-full h-full min-h-[220px] flex items-center justify-center text-gray-300 hover:text-blue-500 transition-colors"
+                    className="w-full h-full min-h-[200px] flex items-center justify-center text-gray-400 hover:text-blue-900"
                   >
-                    <span className="text-5xl font-light">+</span>
+                    <span className="text-4xl">+</span>
                   </button>
                 )}
               </div>
@@ -272,10 +275,10 @@ export default function TeamEditor() {
         </div>
 
         {showSearch && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl border-2 border-gray-100">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-black text-gray-900">Add Pokemon</h2>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-gray-200" style={{ borderRadius: '4px' }}>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Add Pokemon</h2>
                 <button onClick={() => setShowSearch(false)} className="text-gray-500 hover:text-gray-700">
                   <X size={24} />
                 </button>
@@ -307,9 +310,10 @@ export default function TeamEditor() {
                 </div>
                 <button
                   onClick={handleSearch}
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-bold shadow-md"
+                  className="bg-blue-900 text-white px-4 py-2 flex items-center gap-2 font-medium text-sm"
+                  style={{ borderRadius: '4px' }}
                 >
-                  <Search size={20} />
+                  <Search size={16} />
                   Search
                 </button>
               </div>
@@ -338,10 +342,10 @@ export default function TeamEditor() {
         )}
 
         {editingPokemon && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl border-2 border-gray-100">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-black text-gray-900 capitalize">Edit {editingPokemon.name}</h2>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-gray-200" style={{ borderRadius: '4px' }}>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 capitalize">Edit {editingPokemon.name}</h2>
                 <button onClick={() => setEditingPokemon(null)} className="text-gray-500 hover:text-gray-700">
                   <X size={24} />
                 </button>
@@ -424,7 +428,8 @@ export default function TeamEditor() {
 
                 <button
                   onClick={handleSavePokemon}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3.5 rounded-xl hover:from-blue-700 hover:to-blue-800 font-bold shadow-md"
+                  className="w-full bg-blue-900 text-white py-2.5 font-medium"
+                  style={{ borderRadius: '4px' }}
                 >
                   Save Changes
                 </button>
@@ -434,10 +439,10 @@ export default function TeamEditor() {
         )}
 
         {viewingPokemon && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl border-2 border-gray-100">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-black text-gray-900 capitalize">{viewingPokemon.nickname || viewingPokemon.name}</h2>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white p-6 max-w-md w-full border border-gray-200" style={{ borderRadius: '4px' }}>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900 capitalize">{viewingPokemon.nickname || viewingPokemon.name}</h2>
                 <button onClick={() => setViewingPokemon(null)} className="text-gray-500 hover:text-gray-700">
                   <X size={24} />
                 </button>
