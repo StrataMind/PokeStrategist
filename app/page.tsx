@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTeamStore } from '@/lib/store/teamStore';
-import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon, Calculator, TrendingUp, Home as HomeIcon } from 'lucide-react';
+import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon, Calculator, TrendingUp, Home as HomeIcon, Swords, MoreVertical, BarChart3, CheckCircle, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { getTypeColor } from '@/lib/utils';
 
@@ -17,6 +17,7 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'favorite'>('date');
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     loadTeams();
@@ -96,10 +97,12 @@ export default function Home() {
           </div>
         </div>
         <nav className="p-4">
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">Main</div>
           <Link href="/" className="flex items-center gap-3 px-4 py-3 text-gray-900 bg-gray-100 font-medium mb-1" style={{ borderRadius: '4px' }}>
             <HomeIcon size={18} />
             My Teams
           </Link>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4 mt-4">Tools</div>
           <Link href="/calculator" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 font-medium mb-1" style={{ borderRadius: '4px' }}>
             <Calculator size={18} />
             Damage Calculator
@@ -108,6 +111,7 @@ export default function Home() {
             <TrendingUp size={18} />
             EV/IV Calculator
           </Link>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4 mt-4">Actions</div>
           <button onClick={() => setShowImport(true)} className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 font-medium mb-1 text-left" style={{ borderRadius: '4px' }}>
             <Upload size={18} />
             Import Team
@@ -320,34 +324,70 @@ export default function Home() {
                   >
                     Edit
                   </Link>
-                  <button
-                    onClick={() => handleExport(team.id)}
-                    className="bg-gray-200 text-gray-700 p-2"
+                  <Link
+                    href={`/battle/${team.id}`}
+                    className="bg-gray-200 text-gray-700 px-4 py-2 font-medium text-sm"
                     style={{ borderRadius: '4px' }}
-                    title="Export"
                   >
-                    <Download size={16} />
-                  </button>
-                  <button
-                    onClick={() => duplicateTeam(team.id)}
-                    className="bg-gray-200 p-2"
-                    style={{ borderRadius: '4px' }}
-                    title="Duplicate"
-                  >
-                    <Copy size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(team.id)}
-                    className={`p-2 ${
-                      deleteConfirm === team.id
-                        ? 'bg-red-600 text-white'
-                        : 'bg-gray-200 text-gray-700'
-                    }`}
-                    style={{ borderRadius: '4px' }}
-                    title={deleteConfirm === team.id ? 'Click again to confirm' : 'Delete'}
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                    Battle
+                  </Link>
+                  <div className="relative">
+                    <button
+                      onClick={() => setOpenDropdown(openDropdown === team.id ? null : team.id)}
+                      className="bg-gray-200 text-gray-700 p-2"
+                      style={{ borderRadius: '4px' }}
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                    {openDropdown === team.id && (
+                      <div className="absolute right-0 bottom-full mb-1 bg-white border border-gray-200 shadow-lg w-48 z-10" style={{ borderRadius: '4px' }}>
+                        <Link
+                          href={`/analytics/${team.id}`}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
+                        >
+                          <BarChart3 size={14} />
+                          Analytics
+                        </Link>
+                        <Link
+                          href={`/formats/${team.id}`}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
+                        >
+                          <CheckCircle size={14} />
+                          Validate
+                        </Link>
+                        <Link
+                          href={`/share/${team.id}`}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
+                        >
+                          <Share2 size={14} />
+                          Share
+                        </Link>
+                        <button
+                          onClick={() => { handleExport(team.id); setOpenDropdown(null); }}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 text-left"
+                        >
+                          <Download size={14} />
+                          Export
+                        </button>
+                        <button
+                          onClick={() => { duplicateTeam(team.id); setOpenDropdown(null); }}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 text-left"
+                        >
+                          <Copy size={14} />
+                          Duplicate
+                        </button>
+                        <button
+                          onClick={() => { handleDelete(team.id); setOpenDropdown(null); }}
+                          className={`w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 text-left ${
+                            deleteConfirm === team.id ? 'text-red-600 font-medium' : 'text-gray-700'
+                          }`}
+                        >
+                          <Trash2 size={14} />
+                          {deleteConfirm === team.id ? 'Confirm Delete' : 'Delete'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
