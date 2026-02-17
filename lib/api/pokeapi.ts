@@ -42,7 +42,7 @@ export async function fetchPokemonList(limit = 151): Promise<{ id: number; name:
 }
 
 export async function searchPokemon(query: string): Promise<Pokemon[]> {
-  const list = await fetchPokemonList(1000);
+  const list = await fetchPokemonList(2000);
   const filtered = list.filter(p => p.name.includes(query.toLowerCase())).slice(0, 20);
   return Promise.all(filtered.map(p => fetchPokemon(p.id)));
 }

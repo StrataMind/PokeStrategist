@@ -31,7 +31,7 @@ export default function TeamEditor() {
 
   const handleRandomTeam = async () => {
     if (team && team.pokemon.length < team.maxSize) {
-      const randomId = Math.floor(Math.random() * 898) + 1;
+      const randomId = Math.floor(Math.random() * 1025) + 1;
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
       const data = await response.json();
       const pokemon = {
@@ -89,11 +89,11 @@ export default function TeamEditor() {
     setSearchQuery(value);
     if (value.length > 0) {
       try {
-        const response = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=1000`);
+        const response = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=2000`);
         const data = await response.json();
         const filtered = data.results
           .filter((p: any) => p.name.startsWith(value.toLowerCase()))
-          .slice(0, 8)
+          .slice(0, 10)
           .map((p: any) => p.name);
         setSuggestions(filtered);
       } catch (error) {
