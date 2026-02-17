@@ -84,81 +84,81 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50">
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-yellow-500 rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-2xl">⚡</span>
+            <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
+              <span className="text-xl text-white">⚡</span>
             </div>
             <div>
-              <h1 className="text-5xl font-black text-gray-900 tracking-tight">
+              <h1 className="text-4xl font-bold text-gray-900">
                 PokeStrategist
               </h1>
-              <p className="text-gray-600 mt-1 text-base font-medium">Build Your Perfect Team</p>
+              <p className="text-gray-600 text-sm">Professional Team Builder</p>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-12">
-        <div className="flex justify-between items-center mb-10">
-          <div className="flex items-center gap-4">
-            <h2 className="text-4xl font-black text-gray-900">My Teams <span className="text-gray-400 font-bold">({teams.length})</span></h2>
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-gray-900">My Teams <span className="text-gray-500">({teams.length})</span></h2>
             <select 
               value={sortBy} 
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-4 py-2 bg-white border-2 border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm hover:border-gray-300 transition-colors"
+              className="px-3 py-1.5 bg-white border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             >
               <option value="date">Latest</option>
               <option value="name">Name</option>
               <option value="favorite">Favorites</option>
             </select>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <Link
               href="/calculator"
-              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 font-bold shadow-md hover:shadow-lg"
+              className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors font-medium text-sm"
             >
-              <Calculator size={18} />
+              <Calculator size={16} />
               Damage Calc
             </Link>
             <Link
               href="/ev-iv"
-              className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 text-white px-6 py-3 rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all duration-200 font-bold shadow-md hover:shadow-lg"
+              className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors font-medium text-sm"
             >
-              <TrendingUp size={18} />
+              <TrendingUp size={16} />
               EV/IV Calc
             </Link>
             {teams.length > 0 && (
               <button
                 onClick={handleExportAll}
-                className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 font-bold shadow-md hover:shadow-lg"
+                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors font-medium text-sm"
               >
-                <Download size={18} />
+                <Download size={16} />
                 Export All
               </button>
             )}
             <button
               onClick={() => setShowImport(true)}
-              className="flex items-center gap-2 bg-white text-gray-700 px-6 py-3 rounded-xl hover:bg-gray-50 transition-all duration-200 font-bold border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow"
+              className="flex items-center gap-2 bg-white text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors font-medium border border-gray-300 text-sm"
             >
-              <Upload size={18} />
+              <Upload size={16} />
               Import
             </button>
             <button
               onClick={() => setShowCreate(!showCreate)}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-bold shadow-md hover:shadow-lg"
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
             >
-              <Plus size={18} />
+              <Plus size={16} />
               New Team
             </button>
           </div>
         </div>
 
         {showImport && (
-          <div className="bg-white p-8 rounded-2xl shadow-lg border-2 border-gray-100 mb-8 animate-slide-up">
-            <h3 className="text-2xl font-black text-gray-900 mb-6">Import Team</h3>
+          <div className="bg-white p-6 rounded-lg shadow border mb-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Import Team</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Paste Team JSON</label>
@@ -172,13 +172,13 @@ export default function Home() {
               <div className="flex gap-2">
                 <button
                   onClick={handleImport}
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2.5 rounded-xl hover:from-blue-700 hover:to-blue-800 font-bold shadow-md"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium"
                 >
                   Import
                 </button>
                 <button
                   onClick={() => setShowImport(false)}
-                  className="bg-white text-gray-700 px-6 py-2.5 rounded-xl hover:bg-gray-50 font-bold border-2 border-gray-200"
+                  className="bg-white text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium border border-gray-300"
                 >
                   Cancel
                 </button>
@@ -188,8 +188,8 @@ export default function Home() {
         )}
 
         {showCreate && (
-          <div className="bg-white p-8 rounded-2xl shadow-lg border-2 border-gray-100 mb-8 animate-slide-up">
-            <h3 className="text-2xl font-black text-gray-900 mb-6">Create New Team</h3>
+          <div className="bg-white p-6 rounded-lg shadow border mb-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Create New Team</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Team Name</label>
@@ -215,13 +215,13 @@ export default function Home() {
               <div className="flex gap-2">
                 <button
                   onClick={handleCreate}
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2.5 rounded-xl hover:from-blue-700 hover:to-blue-800 font-bold shadow-md"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium"
                 >
                   Create
                 </button>
                 <button
                   onClick={() => setShowCreate(false)}
-                  className="bg-white text-gray-700 px-6 py-2.5 rounded-xl hover:bg-gray-50 font-bold border-2 border-gray-200"
+                  className="bg-white text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium border border-gray-300"
                 >
                   Cancel
                 </button>
@@ -230,7 +230,7 @@ export default function Home() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedTeams.map((team) => {
             const totalStats = team.pokemon.reduce((sum, p) => 
               sum + Object.values(p.stats).reduce((a, b) => a + b, 0), 0
@@ -238,8 +238,8 @@ export default function Home() {
             const avgStat = team.pokemon.length > 0 ? Math.round(totalStats / team.pokemon.length) : 0;
             
             return (
-            <div key={team.id} className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-blue-200 animate-scale-in">
-              <div className="p-6">
+            <div key={team.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow border">
+              <div className="p-5">
                 <div className="flex justify-between items-start mb-2">
                   {editingTeamId === team.id ? (
                     <div className="flex items-center gap-2 flex-1">
@@ -247,43 +247,43 @@ export default function Home() {
                         type="text"
                         value={editingName}
                         onChange={(e) => setEditingName(e.target.value)}
-                        className="flex-1 px-3 py-1 border-2 border-blue-500 rounded-lg font-black text-xl focus:outline-none"
+                        className="flex-1 px-2 py-1 border-2 border-blue-500 rounded font-bold text-lg focus:outline-none"
                         autoFocus
                       />
-                      <button onClick={() => handleRename(team.id)} className="text-green-600 hover:scale-110 transition-transform">
-                        <Save size={20} />
+                      <button onClick={() => handleRename(team.id)} className="text-green-600 hover:text-green-700">
+                        <Save size={18} />
                       </button>
-                      <button onClick={() => setEditingTeamId(null)} className="text-gray-600 hover:scale-110 transition-transform">
-                        <XIcon size={20} />
+                      <button onClick={() => setEditingTeamId(null)} className="text-gray-600 hover:text-gray-700">
+                        <XIcon size={18} />
                       </button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 flex-1">
-                      <h3 className="text-2xl font-black text-gray-900 group-hover:text-blue-600 transition-colors">{team.name}</h3>
+                      <h3 className="text-xl font-bold text-gray-900">{team.name}</h3>
                       <button
                         onClick={() => {
                           setEditingTeamId(team.id);
                           setEditingName(team.name);
                         }}
-                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 transition-all"
+                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 transition-opacity"
                       >
-                        <Edit2 size={16} />
+                        <Edit2 size={14} />
                       </button>
                     </div>
                   )}
                   <button
                     onClick={() => toggleFavorite(team.id)}
-                    className="text-yellow-500 hover:scale-125 transition-transform duration-200"
+                    className="text-yellow-500 hover:text-yellow-600 transition-colors"
                   >
-                    <Star size={22} fill={team.favorite ? 'currentColor' : 'none'} strokeWidth={2.5} />
+                    <Star size={20} fill={team.favorite ? 'currentColor' : 'none'} strokeWidth={2} />
                   </button>
                 </div>
-                <div className="flex items-center gap-3 mb-4">
-                  <p className="text-gray-600 text-sm font-bold">
+                <div className="flex items-center gap-2 mb-3">
+                  <p className="text-gray-600 text-sm font-medium">
                     {team.pokemon.length}/{team.maxSize} Pokemon
                   </p>
                   {avgStat > 0 && (
-                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">⚡ {avgStat}</span>
+                    <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">⚡ {avgStat}</span>
                   )}
                 </div>
                 {team.pokemon.length > 0 && (
@@ -298,11 +298,11 @@ export default function Home() {
                   </div>
                 )}
                 
-                <div className="grid grid-cols-3 gap-2 mb-5">
+                <div className="grid grid-cols-3 gap-2 mb-4">
                   {Array.from({ length: team.maxSize }).map((_, i) => (
                     <div
                       key={i}
-                      className="aspect-square border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center bg-gradient-to-br from-gray-50 to-white hover:from-blue-50 hover:to-white hover:border-blue-300 transition-all duration-200"
+                      className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50"
                     >
                       {team.pokemon[i] ? (
                         <img
@@ -320,62 +320,62 @@ export default function Home() {
                 <div className="flex gap-2">
                   <Link
                     href={`/team/${team.id}`}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-bold shadow-md hover:shadow-lg"
+                    className="flex-1 bg-blue-600 text-white text-center py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
                   >
                     Edit
                   </Link>
                   <Link
                     href={`/battle/${team.id}`}
-                    className="bg-gradient-to-br from-orange-100 to-orange-50 text-orange-700 px-4 py-3 rounded-xl hover:from-orange-200 hover:to-orange-100 transition-all duration-200 border-2 border-orange-200 font-bold"
+                    className="bg-orange-100 text-orange-700 px-3 py-2 rounded-md hover:bg-orange-200 transition-colors border border-orange-200 text-sm"
                     title="Battle"
                   >
                     ⚔️
                   </Link>
                   <Link
                     href={`/analytics/${team.id}`}
-                    className="bg-gradient-to-br from-purple-100 to-purple-50 text-purple-700 px-4 py-3 rounded-xl hover:from-purple-200 hover:to-purple-100 transition-all duration-200 border-2 border-purple-200 font-bold"
+                    className="bg-purple-100 text-purple-700 px-3 py-2 rounded-md hover:bg-purple-200 transition-colors border border-purple-200 text-sm"
                     title="Analytics"
                   >
                     📊
                   </Link>
                   <Link
                     href={`/formats/${team.id}`}
-                    className="bg-gradient-to-br from-blue-100 to-blue-50 text-blue-700 px-4 py-3 rounded-xl hover:from-blue-200 hover:to-blue-100 transition-all duration-200 border-2 border-blue-200 font-bold"
+                    className="bg-blue-100 text-blue-700 px-3 py-2 rounded-md hover:bg-blue-200 transition-colors border border-blue-200 text-sm"
                     title="Validate"
                   >
                     ✓
                   </Link>
                   <Link
                     href={`/share/${team.id}`}
-                    className="bg-gradient-to-br from-pink-100 to-pink-50 text-pink-700 px-4 py-3 rounded-xl hover:from-pink-200 hover:to-pink-100 transition-all duration-200 border-2 border-pink-200 font-bold"
+                    className="bg-pink-100 text-pink-700 px-3 py-2 rounded-md hover:bg-pink-200 transition-colors border border-pink-200 text-sm"
                     title="Share"
                   >
                     🔗
                   </Link>
                   <button
                     onClick={() => handleExport(team.id)}
-                    className="bg-gradient-to-br from-green-100 to-green-50 text-green-700 p-3 rounded-xl hover:from-green-200 hover:to-green-100 transition-all duration-200 border-2 border-green-200"
+                    className="bg-green-100 text-green-700 p-2 rounded-md hover:bg-green-200 transition-colors border border-green-200"
                     title="Export"
                   >
-                    <Download size={18} />
+                    <Download size={16} />
                   </button>
                   <button
                     onClick={() => duplicateTeam(team.id)}
-                    className="bg-gradient-to-br from-gray-100 to-gray-50 p-3 rounded-xl hover:from-gray-200 hover:to-gray-100 transition-all duration-200 border-2 border-gray-200"
+                    className="bg-gray-100 p-2 rounded-md hover:bg-gray-200 transition-colors border border-gray-200"
                     title="Duplicate"
                   >
-                    <Copy size={18} />
+                    <Copy size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(team.id)}
-                    className={`p-3 rounded-xl transition-all duration-200 border-2 ${
+                    className={`p-2 rounded-md transition-colors border ${
                       deleteConfirm === team.id
-                        ? 'bg-red-600 text-white border-red-600 scale-110 shadow-lg'
-                        : 'bg-gradient-to-br from-gray-100 to-gray-50 hover:from-red-50 hover:to-red-100 text-gray-700 hover:text-red-600 border-gray-200 hover:border-red-200'
+                        ? 'bg-red-600 text-white border-red-600'
+                        : 'bg-gray-100 hover:bg-red-50 text-gray-700 hover:text-red-600 border-gray-200 hover:border-red-200'
                     }`}
                     title={deleteConfirm === team.id ? 'Click again to confirm' : 'Delete'}
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
@@ -384,14 +384,14 @@ export default function Home() {
         </div>
 
         {teams.length === 0 && !showCreate && (
-          <div className="text-center py-20">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-5xl">⚡</span>
+          <div className="text-center py-16">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">⚡</span>
             </div>
-            <p className="text-gray-600 text-xl mb-8 font-medium">No teams yet. Create your first team!</p>
+            <p className="text-gray-600 text-lg mb-6">No teams yet. Create your first team!</p>
             <button
               onClick={() => setShowCreate(true)}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 font-bold shadow-lg hover:shadow-xl transition-all"
+              className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium"
             >
               Get Started
             </button>
