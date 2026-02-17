@@ -3,8 +3,8 @@ import { Pokemon, Move } from '@/types/pokemon';
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
-export async function fetchPokemon(id: number): Promise<Pokemon> {
-  const { data } = await axios.get(`${BASE_URL}/pokemon/${id}`);
+export async function fetchPokemon(idOrName: number | string): Promise<Pokemon> {
+  const { data } = await axios.get(`${BASE_URL}/pokemon/${idOrName}`);
   
   return {
     id: data.id,
@@ -42,9 +42,22 @@ export async function fetchPokemonList(limit = 151): Promise<{ id: number; name:
 }
 
 export async function searchPokemon(query: string): Promise<Pokemon[]> {
-  const list = await fetchPokemonList(2000);
-  const filtered = list.filter(p => p.name.includes(query.toLowerCase())).slice(0, 20);
-  return Promise.all(filtered.map(p => fetchPokemon(p.id)));
+  try {
+    const { data } = await axios.get(`${BASE_URL}/pokemon?limit=2000`);
+    const filtered = data.results
+      .filter((p: any) => p.name.includes(query.toLowerCase()))
+      .slice(0, 20);
+    
+    const results = await Promise.allSettled(
+      filtered.map((p: any) => fetchPokemon(p.name))
+    );
+    
+    return results
+      .filter((r): r is PromiseFulfilledResult<Pokemon> => r.status === 'fulfilled')
+      .map(r => r.value);
+  } catch (error) {
+    return [];
+  }
 }
 
 export async function fetchMove(name: string): Promise<Move> {
