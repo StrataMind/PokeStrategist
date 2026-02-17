@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useTeamStore } from '@/lib/store/teamStore';
-import { Plus, Trash2, Copy, Download, Upload, Star, ArrowUpDown } from 'lucide-react';
+import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon } from 'lucide-react';
 import Link from 'next/link';
 import { getTypeColor } from '@/lib/utils';
 
 export default function Home() {
-  const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam, toggleFavorite, exportTeam, importTeam } = useTeamStore();
+  const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam, toggleFavorite, renameTeam, exportTeam, importTeam, exportAllTeams } = useTeamStore();
   const [showCreate, setShowCreate] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [importData, setImportData] = useState('');
@@ -15,6 +15,8 @@ export default function Home() {
   const [teamSize, setTeamSize] = useState(6);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'favorite'>('date');
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
 
   useEffect(() => {
     loadTeams();
@@ -57,6 +59,24 @@ export default function Home() {
     }
   };
 
+  const handleExportAll = () => {
+    const json = exportAllTeams();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `all-teams-${Date.now()}.json`;
+    a.click();
+  };
+
+  const handleRename = (id: string) => {
+    if (editingName.trim()) {
+      renameTeam(id, editingName);
+      setEditingTeamId(null);
+      setEditingName('');
+    }
+  };
+
   const sortedTeams = [...teams].sort((a, b) => {
     if (sortBy === 'favorite') return (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0);
     if (sortBy === 'name') return a.name.localeCompare(b.name);
@@ -96,6 +116,15 @@ export default function Home() {
             </select>
           </div>
           <div className="flex gap-3">
+            {teams.length > 0 && (
+              <button
+                onClick={handleExportAll}
+                className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 font-bold shadow-md hover:shadow-lg"
+              >
+                <Download size={18} />
+                Export All
+              </button>
+            )}
             <button
               onClick={() => setShowImport(true)}
               className="flex items-center gap-2 bg-white text-gray-700 px-6 py-3 rounded-xl hover:bg-gray-50 transition-all duration-200 font-bold border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow"
@@ -198,7 +227,36 @@ export default function Home() {
             <div key={team.id} className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-blue-200 animate-scale-in">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-2xl font-black text-gray-900 group-hover:text-blue-600 transition-colors">{team.name}</h3>
+                  {editingTeamId === team.id ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <input
+                        type="text"
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        className="flex-1 px-3 py-1 border-2 border-blue-500 rounded-lg font-black text-xl focus:outline-none"
+                        autoFocus
+                      />
+                      <button onClick={() => handleRename(team.id)} className="text-green-600 hover:scale-110 transition-transform">
+                        <Save size={20} />
+                      </button>
+                      <button onClick={() => setEditingTeamId(null)} className="text-gray-600 hover:scale-110 transition-transform">
+                        <XIcon size={20} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 flex-1">
+                      <h3 className="text-2xl font-black text-gray-900 group-hover:text-blue-600 transition-colors">{team.name}</h3>
+                      <button
+                        onClick={() => {
+                          setEditingTeamId(team.id);
+                          setEditingName(team.name);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 transition-all"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                    </div>
+                  )}
                   <button
                     onClick={() => toggleFavorite(team.id)}
                     className="text-yellow-500 hover:scale-125 transition-transform duration-200"

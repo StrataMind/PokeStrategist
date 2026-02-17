@@ -9,6 +9,7 @@ interface TeamStore {
   deleteTeam: (id: string) => void;
   duplicateTeam: (id: string) => void;
   toggleFavorite: (id: string) => void;
+  renameTeam: (id: string, name: string) => void;
   setCurrentTeam: (id: string) => void;
   addPokemon: (teamId: string, pokemon: TeamPokemon) => void;
   removePokemon: (teamId: string, position: number) => void;
@@ -16,6 +17,7 @@ interface TeamStore {
   updatePokemon: (teamId: string, position: number, updates: Partial<TeamPokemon>) => void;
   exportTeam: (teamId: string) => string;
   importTeam: (jsonData: string) => void;
+  exportAllTeams: () => string;
 }
 
 export const useTeamStore = create<TeamStore>((set, get) => ({
@@ -70,6 +72,14 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   toggleFavorite: (id: string) => {
     const teams = get().teams.map(t => 
       t.id === id ? { ...t, favorite: !t.favorite } : t
+    );
+    set({ teams });
+    localStorage.setItem('teams', JSON.stringify(teams));
+  },
+
+  renameTeam: (id: string, name: string) => {
+    const teams = get().teams.map(t => 
+      t.id === id ? { ...t, name, updatedAt: new Date().toISOString() } : t
     );
     set({ teams });
     localStorage.setItem('teams', JSON.stringify(teams));
@@ -163,5 +173,9 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     } catch (error) {
       console.error('Invalid team data');
     }
+  },
+
+  exportAllTeams: () => {
+    return JSON.stringify(get().teams, null, 2);
   },
 }));

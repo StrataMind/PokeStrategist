@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useTeamStore } from '@/lib/store/teamStore';
 import { searchPokemon } from '@/lib/api/pokeapi';
 import { Pokemon, TeamPokemon } from '@/types/pokemon';
-import { ArrowLeft, Search, X, Settings, Filter } from 'lucide-react';
+import { ArrowLeft, Search, X, Settings, Filter, Shuffle } from 'lucide-react';
 import Link from 'next/link';
 import { getTypeColor } from '@/lib/utils';
 import { NATURES, POPULAR_ITEMS } from '@/lib/data/gameData';
@@ -27,6 +27,32 @@ export default function TeamEditor() {
   const [selectedItem, setSelectedItem] = useState('');
   const [selectedMoves, setSelectedMoves] = useState<string[]>([]);
   const [filterType, setFilterType] = useState<string>('');
+
+  const handleRandomTeam = async () => {
+    if (team && team.pokemon.length < team.maxSize) {
+      const randomId = Math.floor(Math.random() * 898) + 1;
+      const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
+      const data = await response.json();
+      const pokemon = {
+        id: data.id,
+        name: data.name,
+        sprite: data.sprites.front_default,
+        types: data.types.map((t: any) => t.type.name),
+        abilities: data.abilities.map((a: any) => a.ability.name),
+        stats: {
+          hp: data.stats[0].base_stat,
+          attack: data.stats[1].base_stat,
+          defense: data.stats[2].base_stat,
+          specialAttack: data.stats[3].base_stat,
+          specialDefense: data.stats[4].base_stat,
+          speed: data.stats[5].base_stat,
+        },
+        moves: data.moves.slice(0, 30).map((m: any) => ({ name: m.move.name })),
+        position: team.pokemon.length,
+      };
+      addPokemon(team.id, pokemon);
+    }
+  };
 
   useEffect(() => {
     const currentTeam = teams.find(t => t.id === params.id);
@@ -118,8 +144,8 @@ export default function TeamEditor() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-12">
-        {team.pokemon.length > 0 && (
-          <div className="mb-8">
+        <div className="flex justify-between items-center mb-8">
+          {team.pokemon.length > 0 && (
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
@@ -130,8 +156,17 @@ export default function TeamEditor() {
                 <option key={type} value={type} className="capitalize">{type}</option>
               ))}
             </select>
-          </div>
-        )}
+          )}
+          {team.pokemon.length < team.maxSize && (
+            <button
+              onClick={handleRandomTeam}
+              className="ml-auto flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 font-bold shadow-md hover:shadow-lg"
+            >
+              <Shuffle size={18} />
+              Random Pokemon
+            </button>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {Array.from({ length: team.maxSize }).map((_, i) => {
             const pokemon = team.pokemon.find(p => p.position === i);
