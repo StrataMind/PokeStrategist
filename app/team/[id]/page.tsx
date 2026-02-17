@@ -18,6 +18,7 @@ export default function TeamEditor() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Pokemon[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [editingPokemon, setEditingPokemon] = useState<TeamPokemon | null>(null);
   const [viewingPokemon, setViewingPokemon] = useState<TeamPokemon | null>(null);
@@ -78,7 +79,34 @@ export default function TeamEditor() {
     if (searchQuery.trim()) {
       const results = await searchPokemon(searchQuery);
       setSearchResults(results);
+      setSuggestions([]);
     }
+  };
+
+  const handleSearchChange = async (value: string) => {
+    setSearchQuery(value);
+    if (value.length > 0) {
+      try {
+        const response = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=1000`);
+        const data = await response.json();
+        const filtered = data.results
+          .filter((p: any) => p.name.startsWith(value.toLowerCase()))
+          .slice(0, 8)
+          .map((p: any) => p.name);
+        setSuggestions(filtered);
+      } catch (error) {
+        setSuggestions([]);
+      }
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const handleSuggestionClick = async (name: string) => {
+    setSearchQuery(name);
+    setSuggestions([]);
+    const results = await searchPokemon(name);
+    setSearchResults(results);
   };
 
   const handleAddPokemon = (pokemon: Pokemon) => {
@@ -251,15 +279,30 @@ export default function TeamEditor() {
                 </button>
               </div>
               
-              <div className="flex gap-2 mb-4">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="Search Pokemon..."
-                  className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+              <div className="flex gap-2 mb-4 relative">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    placeholder="Search Pokemon..."
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                  {suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto z-10">
+                      {suggestions.map((name) => (
+                        <button
+                          key={name}
+                          onClick={() => handleSuggestionClick(name)}
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 capitalize font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                        >
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={handleSearch}
                   className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-bold shadow-md"
