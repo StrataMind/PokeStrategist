@@ -35,6 +35,31 @@ A comprehensive Pokemon team building platform - **All Phases Complete!**
   - Physical vs Special balance  
   - Speed tier insights  
 
+### Phase 4: Additional Features
+✅ **Team Management:**
+  - Rename teams inline
+  - Favorite/star teams
+  - Sort teams (Latest, Name, Favorites)
+  - Export all teams at once
+  - Average stats display on cards
+
+✅ **Pokemon Features:**
+  - Autocomplete search suggestions
+  - Random Pokemon generator
+  - Type filter in team editor
+  - Pokemon detail modal with full stats
+
+✅ **Battle Tools:**
+  - Damage Calculator (STAB, type effectiveness)
+  - EV/IV Calculator (stat calculation)
+  - Battle Simulator (turn-based combat)
+
+✅ **Competitive Features:**
+  - Format Validator (OU, UU, VGC, Ubers, LC)
+  - Team Sharing (shareable links)
+  - Species Clause validation
+  - Item Clause validation  
+
 ## 🛠 Tech Stack
 
 - **Framework:** Next.js 15 (App Router)
@@ -64,11 +89,18 @@ npm run dev
 ### Team Management
 1. **Create Team:** Click "New Team", enter name and size (1-6)
 2. **Edit Team:** Click "Edit" on any team card
-3. **Analytics:** Click 📊 icon to view team analytics
-4. **Export:** Click download icon to save team as JSON
-5. **Import:** Click "Import" to load team from JSON
-6. **Duplicate:** Click copy icon to duplicate team
-7. **Delete:** Click trash icon twice to confirm deletion
+3. **Rename Team:** Hover over team name and click edit icon
+4. **Favorite Team:** Click star icon to mark as favorite
+5. **Sort Teams:** Use dropdown to sort by Latest, Name, or Favorites
+6. **Analytics:** Click 📊 icon to view team analytics
+7. **Battle:** Click ⚔️ icon to start battle simulator
+8. **Validate:** Click ✓ icon to validate for competitive formats
+9. **Share:** Click 🔗 icon to generate shareable link
+10. **Export:** Click download icon to save team as JSON
+11. **Export All:** Click "Export All" to download all teams
+12. **Import:** Click "Import" to load team from JSON
+13. **Duplicate:** Click copy icon to duplicate team
+14. **Delete:** Click trash icon twice to confirm deletion
 
 ### Pokemon Customization
 1. Click ⚙️ (Settings) icon on any Pokemon
@@ -78,6 +110,22 @@ npm run dev
 5. Assign held item
 6. Pick up to 4 moves
 7. Click "Save Changes"
+
+### Pokemon Search
+1. Click "+" on empty slot
+2. Type Pokemon name (autocomplete suggestions appear)
+3. Press Enter or click Search
+4. Click Pokemon to add to team
+5. Or click "Random Pokemon" for surprise addition
+
+### Battle Tools
+- **Damage Calculator:** Calculate battle damage with stats and modifiers
+- **EV/IV Calculator:** Calculate final stats with IVs, EVs, and nature
+- **Battle Simulator:** Simulate turn-based battles with your team
+
+### Competitive Tools
+- **Format Validator:** Check team compliance with competitive rules
+- **Team Sharing:** Generate shareable links or copy JSON
 
 ### Team Analytics
 - View offensive type coverage
@@ -132,12 +180,10 @@ pokestrategist/
 
 - User authentication
 - Cloud storage
-- Team sharing with community
-- Battle simulator
-- Damage calculator
-- EV/IV calculator
-- Competitive format validation
-- Pokemon detail pages
+- Multiplayer battles
+- Advanced damage calculator with items/weather
+- Breeding calculator
+- Shiny tracker
 
 ## 📝 License
 
