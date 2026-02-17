@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTeamStore } from '@/lib/store/teamStore';
-import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon, Calculator, TrendingUp, Home } from 'lucide-react';
+import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon, Calculator, TrendingUp, Home as HomeIcon } from 'lucide-react';
 import Link from 'next/link';
 import { getTypeColor } from '@/lib/utils';
 
@@ -97,7 +97,7 @@ export default function Home() {
         </div>
         <nav className="p-4">
           <Link href="/" className="flex items-center gap-3 px-4 py-3 text-gray-900 bg-gray-100 font-medium mb-1" style={{ borderRadius: '4px' }}>
-            <Home size={18} />
+            <HomeIcon size={18} />
             My Teams
           </Link>
           <Link href="/calculator" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 font-medium mb-1" style={{ borderRadius: '4px' }}>
