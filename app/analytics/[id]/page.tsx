@@ -47,25 +47,23 @@ export default function TeamAnalytics() {
   const uniqueTypes = new Set(team.pokemon.flatMap(p => p.types));
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href={`/team/${team.id}`} className="text-gray-600 hover:text-gray-900">
-            <ArrowLeft size={24} />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold">{team.name} - Analytics</h1>
-            <p className="text-sm text-gray-600">{team.pokemon.length} Pokemon</p>
-          </div>
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-white border-b border-gray-200 h-16 flex items-center px-8">
+        <Link href="/" className="text-gray-600 hover:text-blue-900 transition-colors">
+          <ArrowLeft size={20} />
+        </Link>
+        <div className="ml-4">
+          <h1 className="text-xl font-semibold text-gray-900">{team.name} - Analytics</h1>
+          <p className="text-xs text-gray-600">{team.pokemon.length} Pokemon</p>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* Offensive Coverage */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Offensive Coverage</h2>
+          <div className="bg-white p-6 border border-gray-200" style={{ borderRadius: '4px' }}>
+            <h2 className="text-lg font-semibold mb-4">Offensive Coverage</h2>
             <p className="text-sm text-gray-600 mb-4">Types your team can hit super-effectively</p>
             <div className="space-y-2">
               {Object.entries(offensive).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
@@ -86,8 +84,8 @@ export default function TeamAnalytics() {
           </div>
 
           {/* Defensive Weaknesses */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Defensive Weaknesses</h2>
+          <div className="bg-white p-6 border border-gray-200" style={{ borderRadius: '4px' }}>
+            <h2 className="text-lg font-semibold mb-4">Defensive Weaknesses</h2>
             <p className="text-sm text-gray-600 mb-4">Types your team is weak against</p>
             <div className="space-y-2">
               {Object.entries(defensive).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
@@ -108,8 +106,8 @@ export default function TeamAnalytics() {
           </div>
 
           {/* Average Stats */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Average Stats</h2>
+          <div className="bg-white p-6 border border-gray-200" style={{ borderRadius: '4px' }}>
+            <h2 className="text-lg font-semibold mb-4">Average Stats</h2>
             <div className="space-y-3">
               {Object.entries(avgStats).map(([stat, value]) => (
                 <div key={stat}>
@@ -129,8 +127,8 @@ export default function TeamAnalytics() {
           </div>
 
           {/* Team Insights */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Team Insights</h2>
+          <div className="bg-white p-6 border border-gray-200" style={{ borderRadius: '4px' }}>
+            <h2 className="text-lg font-semibold mb-4">Team Insights</h2>
             <div className="space-y-4">
               <div>
                 <h3 className="font-semibold text-sm text-gray-600">Type Diversity</h3>
