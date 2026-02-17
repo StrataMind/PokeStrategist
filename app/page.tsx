@@ -331,6 +331,20 @@ export default function Home() {
                   >
                     📊
                   </Link>
+                  <Link
+                    href={`/formats/${team.id}`}
+                    className="bg-gradient-to-br from-blue-100 to-blue-50 text-blue-700 px-4 py-3 rounded-xl hover:from-blue-200 hover:to-blue-100 transition-all duration-200 border-2 border-blue-200 font-bold"
+                    title="Validate"
+                  >
+                    ✓
+                  </Link>
+                  <Link
+                    href={`/share/${team.id}`}
+                    className="bg-gradient-to-br from-pink-100 to-pink-50 text-pink-700 px-4 py-3 rounded-xl hover:from-pink-200 hover:to-pink-100 transition-all duration-200 border-2 border-pink-200 font-bold"
+                    title="Share"
+                  >
+                    🔗
+                  </Link>
                   <button
                     onClick={() => handleExport(team.id)}
                     className="bg-gradient-to-br from-green-100 to-green-50 text-green-700 p-3 rounded-xl hover:from-green-200 hover:to-green-100 transition-all duration-200 border-2 border-green-200"
