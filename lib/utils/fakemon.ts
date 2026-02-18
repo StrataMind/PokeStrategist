@@ -53,5 +53,11 @@ export function validateFakemon(fakemon: Partial<Fakemon>): string[] {
     errors.push('At least one ability required');
   }
   
+  // Check storage limit
+  const currentSize = new Blob([JSON.stringify(getFakemon())]).size;
+  if (currentSize > 4 * 1024 * 1024) { // 4MB limit
+    errors.push('Storage limit reached. Delete some Fakemon to add more.');
+  }
+  
   return errors;
 }
