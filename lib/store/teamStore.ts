@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Team, TeamPokemon } from '@/types/team';
+import { parseShowdown, exportShowdown } from '@/lib/utils/showdown';
 
 interface TeamStore {
   teams: Team[];
@@ -21,6 +22,8 @@ interface TeamStore {
   exportTeam: (teamId: string) => string;
   importTeam: (jsonData: string) => void;
   exportAllTeams: () => string;
+  importShowdown: (text: string) => void;
+  exportShowdown: (teamId: string) => string;
   bulkDelete: (ids: string[]) => void;
   bulkExport: (ids: string[]) => string;
   bulkFavorite: (ids: string[]) => void;
@@ -192,6 +195,32 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
 
   exportAllTeams: () => {
     return JSON.stringify(get().teams, null, 2);
+  },
+
+  importShowdown: (text: string) => {
+    try {
+      const parsed = parseShowdown(text);
+      const newTeam: Team = {
+        id: Date.now().toString(),
+        name: parsed.name || 'Showdown Import',
+        maxSize: parsed.maxSize || 6,
+        pokemon: parsed.pokemon || [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      const teams = [...get().teams, newTeam];
+      const history = [...get().history.slice(0, get().historyIndex + 1), teams].slice(-10);
+      set({ teams, history, historyIndex: history.length - 1 });
+      localStorage.setItem('teams', JSON.stringify(teams));
+    } catch (error) {
+      console.error('Invalid Showdown format');
+    }
+  },
+
+  exportShowdown: (teamId: string) => {
+    const team = get().teams.find(t => t.id === teamId);
+    if (!team) return '';
+    return exportShowdown(team);
   },
 
   bulkDelete: (ids: string[]) => {

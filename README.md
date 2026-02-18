@@ -20,11 +20,16 @@ A professional Pokemon team building platform with enterprise-grade UI/UX design
 ✅ Duplicate teams instantly  
 ✅ Export individual or all teams (JSON)  
 ✅ Import teams from JSON  
+✅ Import/Export Showdown format  
 ✅ Delete with confirmation  
 ✅ Local storage persistence  
 ✅ Undo/Redo system (Ctrl+Z/Y, last 10 actions)  
 ✅ Dark mode toggle  
 ✅ Team templates (6 pre-built teams)  
+✅ Format validation badges (OU/UU/VGC)  
+✅ Recent teams sidebar (last 5 edited)  
+✅ Keyboard navigation (arrows, enter, delete)  
+✅ Pokemon hover preview with stats  
 
 ### Pokemon Features
 ✅ Search with autocomplete suggestions  
@@ -129,6 +134,9 @@ npm run dev
   - `Ctrl+N` - Create new team
   - `Ctrl+Z` - Undo last action
   - `Ctrl+Y` or `Ctrl+Shift+Z` - Redo action
+  - `↑↓` - Navigate teams with arrow keys
+  - `Enter` - Open selected team
+  - `Delete` - Delete selected teams
   - `Esc` - Close modals
 - **Multi-Select:** Click checkboxes to select multiple teams
 - **Bulk Actions:** Delete, export, or favorite multiple teams at once
@@ -137,13 +145,20 @@ npm run dev
 - **Dark Mode:** Toggle theme with moon/sun icon
 - **Undo/Redo:** Last 10 actions stored in history
 - **Templates:** Start from 6 pre-built competitive/casual teams
+- **Showdown Format:** Import/export Pokemon Showdown format
+- **Validation Badges:** See format compatibility on team cards
+- **Recent Teams:** Quick access to last 5 edited teams
+- **Hover Preview:** See Pokemon stats on hover
 
 ### Dashboard Navigation
 - **My Teams** - View and manage all teams
 - **Damage Calculator** - Calculate battle damage
 - **EV/IV Calculator** - Calculate final stats
+- **Templates** - Start from pre-built teams
 - **Import Team** - Load team from JSON
+- **Import Showdown** - Load from Showdown format
 - **Export All** - Download all teams
+- **Recent** - Last 5 edited teams
 
 ### Team Management
 1. **Create Team:** Click "New Team", enter name and size (1-6)
@@ -225,6 +240,8 @@ pokestrategist/
 │   │   └── templates.ts            # Team templates
 │   ├── utils/
 │   │   ├── typeEffectiveness.ts    # Type chart calculations
+│   │   ├── showdown.ts             # Showdown format parser
+│   │   ├── validator.ts            # Format validation
 │   │   └── utils.ts                # Helper functions
 ├── types/
 │   ├── pokemon.ts

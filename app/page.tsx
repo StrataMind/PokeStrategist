@@ -2,17 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { useTeamStore } from '@/lib/store/teamStore';
-import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon, Calculator, TrendingUp, Home as HomeIcon, Swords, MoreVertical, BarChart3, CheckCircle, Share2, Moon, Sun, Undo, Redo, CheckSquare, Square, Zap } from 'lucide-react';
+import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon, Calculator, TrendingUp, Home as HomeIcon, Swords, MoreVertical, BarChart3, CheckCircle, Share2, Moon, Sun, Undo, Redo, CheckSquare, Square, Zap, AlertCircle, Info } from 'lucide-react';
 import Link from 'next/link';
 import { getTypeColor } from '@/lib/utils';
 import { teamTemplates } from '@/lib/data/templates';
+import { getFormatBadge } from '@/lib/utils/validator';
 
 export default function Home() {
-  const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam, toggleFavorite, renameTeam, exportTeam, importTeam, exportAllTeams, bulkDelete, bulkExport, bulkFavorite, undo, redo, theme, toggleTheme } = useTeamStore();
+  const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam, toggleFavorite, renameTeam, exportTeam, importTeam, exportAllTeams, importShowdown, exportShowdown, bulkDelete, bulkExport, bulkFavorite, undo, redo, theme, toggleTheme } = useTeamStore();
   const [showCreate, setShowCreate] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showShowdownImport, setShowShowdownImport] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [importData, setImportData] = useState('');
+  const [showdownData, setShowdownData] = useState('');
   const [teamName, setTeamName] = useState('');
   const [teamSize, setTeamSize] = useState(6);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -25,6 +28,7 @@ export default function Home() {
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'favorites' | 'size'>('all');
+  const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);
 
   useEffect(() => {
     loadTeams();
@@ -51,10 +55,33 @@ export default function Home() {
         e.preventDefault();
         redo();
       }
+      if (e.key === 'Delete' && selectedTeams.length > 0) {
+        if (confirm(`Delete ${selectedTeams.length} teams?`)) {
+          bulkDelete(selectedTeams);
+          setSelectedTeams([]);
+        }
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const filtered = sortedTeams.filter(team => {
+          if (searchQuery && !team.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
+              !team.pokemon.some(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
+          if (filterType === 'favorites' && !team.favorite) return false;
+          return true;
+        });
+        const currentIndex = filtered.findIndex(t => t.id === hoveredTeam);
+        const nextIndex = e.key === 'ArrowDown' ? currentIndex + 1 : currentIndex - 1;
+        if (nextIndex >= 0 && nextIndex < filtered.length) {
+          setHoveredTeam(filtered[nextIndex].id);
+        }
+      }
+      if (e.key === 'Enter' && hoveredTeam) {
+        window.location.href = `/team/${hoveredTeam}`;
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [loadTeams, theme, undo, redo]);
+  }, [loadTeams, theme, undo, redo, selectedTeams, bulkDelete, hoveredTeam]);
 
   const handleCreate = () => {
     if (teamName.trim()) {
@@ -93,6 +120,14 @@ export default function Home() {
     }
   };
 
+  const handleShowdownImport = () => {
+    if (showdownData.trim()) {
+      importShowdown(showdownData);
+      setShowdownData('');
+      setShowShowdownImport(false);
+    }
+  };
+
   const handleExportAll = () => {
     const json = exportAllTeams();
     const blob = new Blob([json], { type: 'application/json' });
@@ -124,10 +159,15 @@ export default function Home() {
     return true;
   });
 
+  const recentTeams = [...teams].sort((a, b) => 
+    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  ).slice(0, 5);
+
   const commands = [
     { name: 'Create New Team', action: () => setShowCreate(true) },
     { name: 'Start from Template', action: () => setShowTemplates(true) },
-    { name: 'Import Team', action: () => setShowImport(true) },
+    { name: 'Import Team (JSON)', action: () => setShowImport(true) },
+    { name: 'Import from Showdown', action: () => setShowShowdownImport(true) },
     { name: 'Damage Calculator', action: () => window.location.href = '/calculator' },
     { name: 'EV/IV Calculator', action: () => window.location.href = '/ev-iv' },
     { name: 'Toggle Dark Mode', action: () => toggleTheme() },
@@ -177,11 +217,25 @@ export default function Home() {
             <Upload size={18} />
             Import Team
           </button>
+          <button onClick={() => setShowShowdownImport(true)} className={`w-full flex items-center gap-3 px-4 py-3 font-medium mb-1 text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'}`} style={{ borderRadius: '4px' }}>
+            <Upload size={18} />
+            Import Showdown
+          </button>
           {teams.length > 0 && (
             <button onClick={handleExportAll} className={`w-full flex items-center gap-3 px-4 py-3 font-medium mb-1 text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'}`} style={{ borderRadius: '4px' }}>
               <Download size={18} />
               Export All
             </button>
+          )}
+          {recentTeams.length > 0 && (
+            <>
+              <div className={`text-xs font-semibold uppercase tracking-wider mb-2 px-4 mt-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Recent</div>
+              {recentTeams.map(team => (
+                <Link key={team.id} href={`/team/${team.id}`} className={`w-full flex items-center gap-3 px-4 py-2 text-sm font-medium mb-1 text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'}`} style={{ borderRadius: '4px' }}>
+                  <span className="truncate">{team.name}</span>
+                </Link>
+              ))}
+            </>
           )}
         </nav>
       </aside>
@@ -318,7 +372,7 @@ export default function Home() {
           )}
           {showImport && (
             <div className={`p-6 border mb-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`} style={{ borderRadius: '4px' }}>
-              <h3 className={`text-base font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Import Team</h3>
+              <h3 className={`text-base font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Import Team (JSON)</h3>
               <div className="space-y-4">
                 <textarea
                   value={importData}
@@ -337,6 +391,37 @@ export default function Home() {
                   </button>
                   <button
                     onClick={() => setShowImport(false)}
+                    className={`px-4 py-2 font-medium text-sm ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}
+                    style={{ borderRadius: '4px' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showShowdownImport && (
+            <div className={`p-6 border mb-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`} style={{ borderRadius: '4px' }}>
+              <h3 className={`text-base font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Import from Showdown</h3>
+              <div className="space-y-4">
+                <textarea
+                  value={showdownData}
+                  onChange={(e) => setShowdownData(e.target.value)}
+                  placeholder="Paste Showdown format here...\n\nPikachu @ Light Ball\nAbility: Static\nAdamant Nature\n- Thunderbolt\n- Iron Tail"
+                  className={`w-full px-3 py-2 border h-32 ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300 text-gray-900'}`}
+                  style={{ borderRadius: '4px' }}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleShowdownImport}
+                    className="bg-blue-900 text-white px-4 py-2 font-medium text-sm"
+                    style={{ borderRadius: '4px' }}
+                  >
+                    Import
+                  </button>
+                  <button
+                    onClick={() => setShowShowdownImport(false)}
                     className={`px-4 py-2 font-medium text-sm ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}
                     style={{ borderRadius: '4px' }}
                   >
@@ -400,9 +485,16 @@ export default function Home() {
                 sum + Object.values(p.stats).reduce((a, b) => a + b, 0), 0
               );
               const avgStat = team.pokemon.length > 0 ? Math.round(totalStats / team.pokemon.length) : 0;
+              const validation = getFormatBadge(team);
               
               return (
-              <div key={team.id} className={`border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`} style={{ borderRadius: '4px' }}>
+              <div 
+                key={team.id} 
+                className={`border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} ${hoveredTeam === team.id ? 'ring-2 ring-blue-500' : ''}`} 
+                style={{ borderRadius: '4px' }}
+                onMouseEnter={() => setHoveredTeam(team.id)}
+                onMouseLeave={() => setHoveredTeam(null)}
+              >
                 <div className={`p-5 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2 flex-1">
@@ -455,6 +547,12 @@ export default function Home() {
                     {avgStat > 0 && (
                       <span className="text-xs text-blue-900 bg-blue-50 px-2 py-0.5" style={{ borderRadius: '4px' }}>⚡ {avgStat}</span>
                     )}
+                    {validation && (
+                      <span className={`text-xs px-2 py-0.5 flex items-center gap-1 ${validation.valid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`} style={{ borderRadius: '4px' }} title={validation.valid ? `Valid ${validation.format}` : 'Invalid'}>
+                        {validation.valid ? <CheckCircle size={10} /> : <AlertCircle size={10} />}
+                        {validation.format}
+                      </span>
+                    )}
                   </div>
                 </div>
                 
@@ -463,15 +561,30 @@ export default function Home() {
                     {Array.from({ length: team.maxSize }).map((_, i) => (
                       <div
                         key={i}
-                        className={`aspect-square border flex items-center justify-center ${theme === 'dark' ? 'border-gray-700 bg-gray-700' : 'border-gray-300 bg-gray-50'}`}
+                        className={`aspect-square border flex items-center justify-center relative group ${theme === 'dark' ? 'border-gray-700 bg-gray-700' : 'border-gray-300 bg-gray-50'}`}
                         style={{ borderRadius: '4px' }}
                       >
                         {team.pokemon[i] ? (
-                          <img
-                            src={team.pokemon[i].sprite}
-                            alt={team.pokemon[i].name}
-                            className="w-full h-full object-contain"
-                          />
+                          <>
+                            <img
+                              src={team.pokemon[i].sprite}
+                              alt={team.pokemon[i].name}
+                              className="w-full h-full object-contain"
+                            />
+                            <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'} bg-opacity-95 p-2`} style={{ borderRadius: '4px' }}>
+                              <div className="text-xs">
+                                <p className={`font-semibold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{team.pokemon[i].nickname || team.pokemon[i].name}</p>
+                                {team.pokemon[i].selectedAbility && (
+                                  <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{team.pokemon[i].selectedAbility}</p>
+                                )}
+                                <div className="flex gap-1 mt-1">
+                                  {team.pokemon[i].types.map(t => (
+                                    <span key={t} className="text-xs px-1 py-0.5 bg-gray-200 text-gray-700" style={{ borderRadius: '2px' }}>{t}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </>
                         ) : (
                           <span className={`text-xl ${theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}`}>+</span>
                         )}
@@ -531,7 +644,18 @@ export default function Home() {
                           className={`w-full flex items-center gap-2 px-4 py-2 text-sm border-b text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 border-gray-700' : 'text-gray-700 hover:bg-gray-50 border-gray-100'}`}
                         >
                           <Download size={14} />
-                          Export
+                          Export JSON
+                        </button>
+                        <button
+                          onClick={() => { 
+                            const text = exportShowdown(team.id);
+                            navigator.clipboard.writeText(text);
+                            setOpenDropdown(null);
+                          }}
+                          className={`w-full flex items-center gap-2 px-4 py-2 text-sm border-b text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 border-gray-700' : 'text-gray-700 hover:bg-gray-50 border-gray-100'}`}
+                        >
+                          <Copy size={14} />
+                          Copy Showdown
                         </button>
                         <button
                           onClick={() => { duplicateTeam(team.id); setOpenDropdown(null); }}
@@ -576,7 +700,9 @@ export default function Home() {
               <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                 <kbd className={`px-2 py-1 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'}`} style={{ borderRadius: '4px' }}>Ctrl+K</kbd> Command Palette • 
                 <kbd className={`px-2 py-1 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'}`} style={{ borderRadius: '4px' }}>Ctrl+N</kbd> New Team • 
-                <kbd className={`px-2 py-1 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'}`} style={{ borderRadius: '4px' }}>Ctrl+Z</kbd> Undo
+                <kbd className={`px-2 py-1 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'}`} style={{ borderRadius: '4px' }}>Ctrl+Z</kbd> Undo • 
+                <kbd className={`px-2 py-1 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'}`} style={{ borderRadius: '4px' }}>↑↓</kbd> Navigate • 
+                <kbd className={`px-2 py-1 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'}`} style={{ borderRadius: '4px' }}>Enter</kbd> Open
               </p>
             </div>
           )}
