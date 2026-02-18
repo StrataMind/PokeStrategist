@@ -27,6 +27,8 @@ export default function BattleSimulator() {
   const [opponentFainted, setOpponentFainted] = useState<number[]>([]);
   const [battleStarted, setBattleStarted] = useState(false);
   const [winner, setWinner] = useState<string>('');
+  const [criticalHit, setCriticalHit] = useState(false);
+  const [battleAnimation, setBattleAnimation] = useState<'player' | 'opponent' | null>(null);
 
   useEffect(() => {
     const currentTeam = teams.find(t => t.id === params.id);
@@ -72,6 +74,10 @@ export default function BattleSimulator() {
     const level = 50;
     const power = 60;
     
+    // Critical hit (12.5% chance)
+    const isCritical = Math.random() < 0.125;
+    const criticalMod = isCritical ? 1.5 : 1;
+    
     // Type effectiveness
     let effectiveness = 1;
     const attackerType = attacker.types[0];
@@ -113,9 +119,9 @@ export default function BattleSimulator() {
     if (weather === 'sun' && attackerType === 'water') weatherMod = 0.5;
     
     const baseDamage = ((2 * level / 5 + 2) * power * attackStat / defenseStat / 50 + 2);
-    const damage = Math.floor(baseDamage * stab * effectiveness * weatherMod * (Math.random() * 0.15 + 0.85));
+    const damage = Math.floor(baseDamage * stab * effectiveness * weatherMod * criticalMod * (Math.random() * 0.15 + 0.85));
     
-    return { damage, effectiveness, stab: stab > 1 };
+    return { damage, effectiveness, stab: stab > 1, critical: isCritical };
   };
 
   const applyStatusEffect = (target: 'player' | 'opponent') => {
@@ -148,11 +154,17 @@ export default function BattleSimulator() {
     setLog(prev => [...prev, `\n--- Turn ${turn} ---`]);
     setTurn(t => t + 1);
 
-    // Player attacks
-    const { damage: playerDamage, effectiveness: playerEff, stab: playerStab } = calculateDamage(selectedPokemon, opponentPokemon);
+    // Player attacks with animation
+    setBattleAnimation('player');
+    setTimeout(() => setBattleAnimation(null), 500);
+    
+    const { damage: playerDamage, effectiveness: playerEff, stab: playerStab, critical: playerCrit } = calculateDamage(selectedPokemon, opponentPokemon);
+    setCriticalHit(playerCrit);
+    
     let effectMsg = '';
-    if (playerEff > 1) effectMsg = " It's super effective!";
-    if (playerEff < 1) effectMsg = " It's not very effective...";
+    if (playerCrit) effectMsg = ' Critical hit!';
+    if (playerEff > 1) effectMsg += " It's super effective!";
+    if (playerEff < 1) effectMsg += " It's not very effective...";
     if (playerStab) effectMsg += ' (STAB)';
     
     const newOpponentHP = Math.max(0, opponentHP - playerDamage);
@@ -164,11 +176,15 @@ export default function BattleSimulator() {
 
     if (newOpponentHP > 0) {
       setTimeout(() => {
-        // Opponent attacks
-        const { damage: opponentDamage, effectiveness: opponentEff, stab: opponentStab } = calculateDamage(opponentPokemon, selectedPokemon);
+        // Opponent attacks with animation
+        setBattleAnimation('opponent');
+        setTimeout(() => setBattleAnimation(null), 500);
+        
+        const { damage: opponentDamage, effectiveness: opponentEff, stab: opponentStab, critical: opponentCrit } = calculateDamage(opponentPokemon, selectedPokemon);
         let oppEffectMsg = '';
-        if (opponentEff > 1) oppEffectMsg = " It's super effective!";
-        if (opponentEff < 1) oppEffectMsg = " It's not very effective...";
+        if (opponentCrit) oppEffectMsg = ' Critical hit!';
+        if (opponentEff > 1) oppEffectMsg += " It's super effective!";
+        if (opponentEff < 1) oppEffectMsg += " It's not very effective...";
         if (opponentStab) oppEffectMsg += ' (STAB)';
         
         const newPlayerHP = Math.max(0, playerHP - opponentDamage);
@@ -283,11 +299,14 @@ export default function BattleSimulator() {
             )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
-          <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--gold)', padding: '2rem', boxShadow: '4px 4px 0 var(--border)' }}>
+          <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--gold)', padding: '2rem', boxShadow: '4px 4px 0 var(--border)', position: 'relative', overflow: 'hidden' }}>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, color: 'var(--ink)', marginBottom: '1.5rem' }}>Your Pokémon</h2>
+            {battleAnimation === 'player' && (
+              <div style={{ position: 'absolute', inset: 0, background: 'rgba(201,168,76,0.3)', animation: 'flash 0.5s', pointerEvents: 'none', zIndex: 1 }} />
+            )}
             {selectedPokemon ? (
               <div style={{ textAlign: 'center' }}>
-                <img src={selectedPokemon.sprite} alt={selectedPokemon.name} style={{ width: '192px', height: '192px', margin: '0 auto', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                <img src={selectedPokemon.sprite} alt={selectedPokemon.name} style={{ width: '192px', height: '192px', margin: '0 auto', objectFit: 'contain', imageRendering: 'pixelated', transform: battleAnimation === 'player' ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.3s' }} />
                 <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, textTransform: 'capitalize', marginTop: '1rem' }}>{selectedPokemon.nickname || selectedPokemon.name}</h3>
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '0.75rem' }}>
                   {selectedPokemon.types.map(type => (
@@ -318,11 +337,14 @@ export default function BattleSimulator() {
             )}
           </div>
 
-          <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--red)', padding: '2rem', boxShadow: '4px 4px 0 var(--border)' }}>
+          <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--red)', padding: '2rem', boxShadow: '4px 4px 0 var(--border)', position: 'relative', overflow: 'hidden' }}>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, color: 'var(--red)', marginBottom: '1.5rem' }}>Opponent</h2>
+            {battleAnimation === 'opponent' && (
+              <div style={{ position: 'absolute', inset: 0, background: 'rgba(139,38,53,0.3)', animation: 'flash 0.5s', pointerEvents: 'none', zIndex: 1 }} />
+            )}
             {opponentPokemon ? (
               <div style={{ textAlign: 'center' }}>
-                <img src={opponentPokemon.sprite} alt={opponentPokemon.name} style={{ width: '192px', height: '192px', margin: '0 auto', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                <img src={opponentPokemon.sprite} alt={opponentPokemon.name} style={{ width: '192px', height: '192px', margin: '0 auto', objectFit: 'contain', imageRendering: 'pixelated', transform: battleAnimation === 'opponent' ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.3s' }} />
                 <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, textTransform: 'capitalize', marginTop: '1rem' }}>{opponentPokemon.nickname || opponentPokemon.name}</h3>
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '0.75rem' }}>
                   {opponentPokemon.types.map(type => (
@@ -402,9 +424,14 @@ export default function BattleSimulator() {
               <p style={{ color: 'var(--ink-muted)', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', textAlign: 'center' }}>Battle log will appear here...</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {log.map((entry, i) => (
-                  <p key={i} style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', color: 'var(--ink)' }}>&gt; {entry}</p>
-                ))}
+                {log.map((entry, i) => {
+                  const isCritical = entry.includes('Critical');
+                  const isSuperEffective = entry.includes('super effective');
+                  const color = isCritical ? 'var(--gold)' : isSuperEffective ? 'var(--green)' : 'var(--ink)';
+                  return (
+                    <p key={i} style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', color, fontWeight: isCritical || isSuperEffective ? 700 : 400 }}>&gt; {entry}</p>
+                  );
+                })}
               </div>
             )}
           </div>
