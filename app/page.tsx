@@ -22,8 +22,8 @@ const navItems = [
     section: 'ACTIONS',
     items: [
       { icon: '⊡', label: 'Templates', href: '#', active: undefined as boolean | undefined },
+      { icon: '⚡', label: 'Create Fakémon', href: '/fakemon', active: undefined as boolean | undefined },
       { icon: '↑', label: 'Import Team', href: '#', active: undefined as boolean | undefined },
-      { icon: '↑', label: 'Import Showdown', href: '#', active: undefined as boolean | undefined },
       { icon: '↓', label: 'Export All', href: '#', active: undefined as boolean | undefined },
     ],
   },

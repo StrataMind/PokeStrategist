@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { Pokemon, Move } from '@/types/pokemon';
+import { Fakemon } from '@/types/fakemon';
+import { getFakemon } from '@/lib/utils/fakemon';
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
@@ -41,8 +43,9 @@ export async function fetchPokemonList(limit = 151): Promise<{ id: number; name:
   }));
 }
 
-export async function searchPokemon(query: string): Promise<Pokemon[]> {
+export async function searchPokemon(query: string): Promise<(Pokemon | Fakemon)[]> {
   try {
+    // Search official Pokemon
     const { data } = await axios.get(`${BASE_URL}/pokemon?limit=2000`);
     const filtered = data.results
       .filter((p: any) => p.name.includes(query.toLowerCase()))
@@ -52,11 +55,20 @@ export async function searchPokemon(query: string): Promise<Pokemon[]> {
       filtered.map((p: any) => fetchPokemon(p.name))
     );
     
-    return results
+    const official = results
       .filter((r): r is PromiseFulfilledResult<Pokemon> => r.status === 'fulfilled')
       .map(r => r.value);
+    
+    // Search Fakemon
+    const fakemon = getFakemon().filter(f => 
+      f.name.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    return [...official, ...fakemon];
   } catch (error) {
-    return [];
+    return getFakemon().filter(f => 
+      f.name.toLowerCase().includes(query.toLowerCase())
+    );
   }
 }
 
