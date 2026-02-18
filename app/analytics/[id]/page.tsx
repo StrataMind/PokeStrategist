@@ -47,14 +47,14 @@ export default function TeamAnalytics() {
   const uniqueTypes = new Set(team.pokemon.flatMap(p => p.types));
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white border-b border-gray-200 h-16 flex items-center px-8">
-        <Link href="/" className="text-gray-600 hover:text-blue-900 transition-colors">
+    <div style={{ minHeight: '100vh', background: 'var(--cream)', fontFamily: "'Libre Baskerville', Georgia, serif" }}>
+      <header style={{ height: '64px', background: 'var(--parchment)', borderBottom: '2px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 2rem', gap: '1rem' }}>
+        <Link href="/" style={{ color: 'var(--ink-muted)', textDecoration: 'none' }}>
           <ArrowLeft size={20} />
         </Link>
-        <div className="ml-4">
-          <h1 className="text-xl font-semibold text-gray-900">{team.name} - Analytics</h1>
-          <p className="text-xs text-gray-600">{team.pokemon.length} Pokemon</p>
+        <div>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', fontWeight: 700, color: 'var(--ink)' }}>{team.name} - Analytics</h1>
+          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', color: 'var(--ink-muted)', letterSpacing: '0.1em' }}>{team.pokemon.length} Pokémon</p>
         </div>
       </header>
 

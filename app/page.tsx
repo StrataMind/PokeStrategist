@@ -2,12 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useTeamStore } from '@/lib/store/teamStore';
-import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon, Calculator, TrendingUp, Home as HomeIcon, Swords, MoreVertical, BarChart3, CheckCircle, Share2, Moon, Sun, Undo, Redo, CheckSquare, Square, Zap, AlertCircle, Info, Image as ImageIcon, Clock } from 'lucide-react';
+import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon, Calculator, TrendingUp, Home as HomeIcon, Swords, MoreVertical, BarChart3, CheckCircle, Share2, Moon, Sun, Undo, Redo, CheckSquare, Square, Zap, AlertCircle, Info, Image as ImageIcon, Clock, GitCompare } from 'lucide-react';
 import Link from 'next/link';
 import { getTypeColor } from '@/lib/utils';
 import { teamTemplates } from '@/lib/data/templates';
 import { getFormatBadge } from '@/lib/utils/validator';
 import { getTeamCoverage, getTeamTypeFilters } from '@/lib/utils/teamStats';
+import CommandPalette from '@/components/CommandPalette';
+import PokemonHoverPreview from '@/components/PokemonHoverPreview';
+import AutoSaveIndicator from '@/components/AutoSaveIndicator';
+import KeyboardShortcuts from '@/components/KeyboardShortcuts';
+import { exportTeamAsImage } from '@/lib/utils/exportImage';
 
 const navItems = [
   { section: 'MAIN', items: [{ icon: '⊞', label: 'My Teams', href: '/', active: true as boolean | undefined }] },
@@ -16,14 +21,15 @@ const navItems = [
     items: [
       { icon: '⊟', label: 'Damage Calculator', href: '/calculator', active: undefined as boolean | undefined },
       { icon: '↗', label: 'EV/IV Calculator', href: '/ev-iv', active: undefined as boolean | undefined },
+      { icon: '⊕', label: 'Compare Teams', href: '/compare', active: undefined as boolean | undefined },
     ],
   },
   {
     section: 'ACTIONS',
     items: [
-      { icon: '⊡', label: 'Templates', href: '#', active: undefined as boolean | undefined },
+      { icon: '⊡', label: 'Templates', href: '/templates', active: undefined as boolean | undefined },
       { icon: '⚡', label: 'Create Fakémon', href: '/fakemon', active: undefined as boolean | undefined },
-      { icon: '↑', label: 'Import Team', href: '#', active: undefined as boolean | undefined },
+      { icon: '↑', label: 'Import/Export', href: '/showdown', active: undefined as boolean | undefined },
       { icon: '↓', label: 'Export All', href: '#', active: undefined as boolean | undefined },
     ],
   },
@@ -43,10 +49,37 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'favorites'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [focusedIndex, setFocusedIndex] = useState(0);
 
   useEffect(() => {
     loadTeams();
   }, [loadTeams]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'n' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setShowCreate(true);
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex(i => Math.min(i + 1, filteredTeams.length - 1));
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex(i => Math.max(i - 1, 0));
+      }
+      if (e.key === 'Enter' && filteredTeams[focusedIndex]) {
+        window.location.href = `/team/${filteredTeams[focusedIndex].id}`;
+      }
+      if (e.key === 'Delete' && selectedTeams.length > 0) {
+        bulkDelete(selectedTeams);
+        setSelectedTeams([]);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [focusedIndex, filteredTeams, selectedTeams, bulkDelete]);
 
   const handleCreate = () => {
     if (teamName.trim()) {
@@ -161,6 +194,21 @@ export default function Home() {
             <span style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.6rem', color: 'var(--ink-muted)', pointerEvents: 'none' }}>▼</span>
           </div>
 
+          <button onClick={undo} disabled={!teams.length} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem', color: 'var(--ink-muted)', cursor: 'pointer' }} title="Undo (Ctrl+Z)">↶</button>
+          <button onClick={redo} disabled={!teams.length} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem', color: 'var(--ink-muted)', cursor: 'pointer' }} title="Redo (Ctrl+Y)">↷</button>
+          <button onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem', color: 'var(--ink-muted)', cursor: 'pointer' }} title="Keyboard Shortcuts (?)">⌨</button>
+
+          {selectedTeams.length > 0 && (
+            <>
+              <div style={{ height: '24px', width: '1px', background: 'var(--border)' }} />
+              <button onClick={() => bulkFavorite(selectedTeams)} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem 0.75rem', color: 'var(--gold)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }} title="Favorite Selected">
+                ★ {selectedTeams.length}
+              </button>
+              <button onClick={() => { const data = bulkExport(selectedTeams); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'teams.json'; a.click(); }} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem 0.75rem', color: 'var(--ink-muted)', cursor: 'pointer' }} title="Export Selected">↓</button>
+              <button onClick={() => { if (confirm(`Delete ${selectedTeams.length} teams?`)) { bulkDelete(selectedTeams); setSelectedTeams([]); } }} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem 0.75rem', color: 'var(--red)', cursor: 'pointer' }} title="Delete Selected">🗑</button>
+            </>
+          )}
+
           <button onClick={() => setShowCreate(true)} style={{ background: 'var(--ink)', border: '2px solid var(--gold)', padding: '0.45rem 1.1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--gold)', cursor: 'pointer', letterSpacing: '0.1em', boxShadow: '2px 2px 0 var(--gold-dark)', transition: 'all 0.15s' }}>+ New Team</button>
         </header>
 
@@ -215,7 +263,11 @@ export default function Home() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'var(--border)' }}>
                   {Array.from({ length: team.maxSize }).map((_, i) => (
                     <div key={i} style={{ background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem', aspectRatio: '1' }}>
-                      {team.pokemon[i] ? <img src={team.pokemon[i].sprite} alt={team.pokemon[i].name} style={{ width: '64px', height: '64px', imageRendering: 'pixelated', objectFit: 'contain' }} /> : <span style={{ fontSize: '1.5rem', color: 'var(--border)' }}>+</span>}
+                      {team.pokemon[i] ? (
+                        <PokemonHoverPreview pokemon={team.pokemon[i]}>
+                          <img src={team.pokemon[i].sprite} alt={team.pokemon[i].name} style={{ width: '64px', height: '64px', imageRendering: 'pixelated', objectFit: 'contain' }} />
+                        </PokemonHoverPreview>
+                      ) : <span style={{ fontSize: '1.5rem', color: 'var(--border)' }}>+</span>}
                     </div>
                   ))}
                 </div>
@@ -223,6 +275,7 @@ export default function Home() {
                 <div style={{ padding: '0.85rem 1.25rem', display: 'flex', gap: '0.6rem' }}>
                   <Link href={`/team/${team.id}`} style={{ flex: 1, background: 'var(--ink)', border: '2px solid var(--gold)', color: 'var(--gold)', padding: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer', boxShadow: '2px 2px 0 var(--gold-dark)', textAlign: 'center', textDecoration: 'none', display: 'block' }}>EDIT</Link>
                   <Link href={`/battle/${team.id}`} style={{ flex: 1, background: 'white', border: '1px solid var(--border)', color: 'var(--ink)', padding: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', display: 'block' }}>BATTLE</Link>
+                  <button onClick={() => exportTeamAsImage(team)} style={{ background: 'white', border: '1px solid var(--border)', color: 'var(--ink-muted)', padding: '0.5rem 0.75rem', cursor: 'pointer' }} title="Export as Image">🖼</button>
                   <button onClick={() => setOpenDropdown(openDropdown === team.id ? null : team.id)} style={{ background: 'white', border: '1px solid var(--border)', color: 'var(--ink-muted)', padding: '0.5rem 0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', cursor: 'pointer' }}>···</button>
                 </div>
               </div>
@@ -256,6 +309,10 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        <CommandPalette />
+        <AutoSaveIndicator />
+        <KeyboardShortcuts />
       </div>
     </div>
   );
