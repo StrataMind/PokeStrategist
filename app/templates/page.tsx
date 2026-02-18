@@ -18,6 +18,7 @@ export default function TemplatesPage() {
     setTimeout(() => {
       template.pokemon.forEach((p, i) => {
         addPokemon(teamId, {
+          id: `${teamId}-${i}`,
           name: p.name,
           nickname: '',
           sprite: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.name}.png`,
