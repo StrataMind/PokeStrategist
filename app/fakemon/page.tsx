@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download, Upload } from 'lucide-react';
 import { addFakemon, validateFakemon, getFakemon, deleteFakemon } from '@/lib/utils/fakemon';
+import { downloadFakemonJSON, importFakemonCollection } from '@/lib/utils/fakemonExport';
 import { Fakemon } from '@/types/fakemon';
 
 const TYPES = ['normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'];
@@ -14,12 +15,57 @@ export default function FakemonCreator() {
   const [stats, setStats] = useState({ hp: 50, attack: 50, defense: 50, specialAttack: 50, specialDefense: 50, speed: 50 });
   const [abilities, setAbilities] = useState('');
   const [sprite, setSprite] = useState('');
+  const [spriteFile, setSpriteFile] = useState<File | null>(null);
+  const [spritePreview, setSpritePreview] = useState('');
   const [creator, setCreator] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
   const [success, setSuccess] = useState(false);
-  const [fakemonList, setFakemonList] = useState<Fakemon[]>([]);
+  const [fakemonList, setFakemonList] = useState<Fakemon[]>(getFakemon());
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = importFakemonCollection(event.target?.result as string);
+      if (result.success) {
+        setFakemonList(getFakemon());
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 2000);
+      } else {
+        setErrors([result.error || 'Import failed']);
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const totalStats = Object.values(stats).reduce((a, b) => a + b, 0);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5120) {
+      setErrors(['Image must be 5KB or less']);
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setErrors(['File must be an image']);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setSpritePreview(base64);
+      setSprite(base64);
+      setErrors([]);
+    };
+    reader.readAsDataURL(file);
+    setSpriteFile(file);
+  };
 
   const handleSubmit = () => {
     const fakemon = {
@@ -27,7 +73,7 @@ export default function FakemonCreator() {
       types,
       stats,
       abilities: abilities.split(',').map(a => a.trim()).filter(Boolean),
-      sprite: sprite || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png',
+      sprite: sprite || spritePreview || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png',
       generation: 'Fan Gen 1',
       creator,
       height: 10,
@@ -118,21 +164,63 @@ export default function FakemonCreator() {
               <input type="text" value={abilities} onChange={(e) => setAbilities(e.target.value)} style={{ width: '100%', border: '1px solid var(--border)', padding: '0.5rem', fontFamily: "'DM Mono', monospace" }} />
             </div>
 
+            <div>
+              <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: 'var(--ink-muted)', marginBottom: '0.4rem' }}>SPRITE IMAGE (Max 5KB)</label>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileUpload}
+                style={{ width: '100%', border: '1px solid var(--border)', padding: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem' }} 
+              />
+              {spritePreview && (
+                <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+                  <img src={spritePreview} alt="Preview" style={{ width: '96px', height: '96px', imageRendering: 'pixelated', border: '1px solid var(--border)' }} />
+                  <p style={{ fontSize: '0.65rem', color: 'var(--ink-muted)', marginTop: '0.25rem' }}>{spriteFile ? `${(spriteFile.size / 1024).toFixed(2)}KB` : ''}</p>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: 'var(--ink-muted)', marginBottom: '0.4rem' }}>OR SPRITE URL</label>
+              <input type="text" value={sprite} onChange={(e) => setSprite(e.target.value)} placeholder="https://..." style={{ width: '100%', border: '1px solid var(--border)', padding: '0.5rem', fontFamily: "'DM Mono', monospace" }} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: 'var(--ink-muted)', marginBottom: '0.4rem' }}>CREATOR NAME</label>
+              <input type="text" value={creator} onChange={(e) => setCreator(e.target.value)} style={{ width: '100%', border: '1px solid var(--border)', padding: '0.5rem', fontFamily: "'DM Mono', monospace" }} />
+            </div>
+
             <button onClick={handleSubmit} style={{ background: 'var(--ink)', border: '2px solid var(--gold)', color: 'var(--gold)', padding: '0.75rem', fontFamily: "'DM Mono', monospace", cursor: 'pointer', boxShadow: '3px 3px 0 var(--gold-dark)' }}>
               CREATE FAKÉMON
             </button>
+
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+              <button onClick={downloadFakemonJSON} style={{ flex: 1, background: 'white', border: '1px solid var(--border)', color: 'var(--ink)', padding: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                <Download size={14} />
+                EXPORT ALL
+              </button>
+              <label style={{ flex: 1, background: 'white', border: '1px solid var(--border)', color: 'var(--ink)', padding: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                <Upload size={14} />
+                IMPORT JSON
+                <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+              </label>
+            </div>
           </div>
         </div>
 
         <div style={{ marginTop: '2rem' }}>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', marginBottom: '1rem' }}>Your Fakémon ({fakemonList.length})</h2>
-          {fakemonList.map(f => (
-            <div key={f.id} style={{ background: 'var(--parchment)', border: '1px solid var(--border)', padding: '1rem', marginBottom: '1rem' }}>
-              <h3 style={{ fontFamily: "'Playfair Display', serif" }}>{f.name}</h3>
-              <p style={{ fontSize: '0.8rem' }}>{f.types.join(' / ')}</p>
-              <button onClick={() => { deleteFakemon(f.id); setFakemonList(getFakemon()); }} style={{ background: 'var(--red)', color: 'white', border: 'none', padding: '0.25rem 0.5rem', fontSize: '0.7rem', cursor: 'pointer', marginTop: '0.5rem' }}>DELETE</button>
-            </div>
-          ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+            {fakemonList.map(f => (
+              <div key={f.id} style={{ background: 'var(--parchment)', border: '1px solid var(--border)', padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <img src={f.sprite} alt={f.name} style={{ width: '96px', height: '96px', imageRendering: 'pixelated', marginBottom: '0.5rem' }} />
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', marginBottom: '0.25rem' }}>{f.name}</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginBottom: '0.5rem' }}>{f.types.join(' / ')}</p>
+                <p style={{ fontSize: '0.65rem', color: 'var(--ink-muted)', marginBottom: '0.5rem' }}>by {f.creator || 'Anonymous'}</p>
+                <button onClick={() => { deleteFakemon(f.id); setFakemonList(getFakemon()); }} style={{ background: 'var(--red)', color: 'white', border: 'none', padding: '0.4rem 0.75rem', fontSize: '0.7rem', cursor: 'pointer', fontFamily: "'DM Mono', monospace" }}>DELETE</button>
+              </div>
+            ))}
+          </div>
         </div>
       </main>
     </div>
