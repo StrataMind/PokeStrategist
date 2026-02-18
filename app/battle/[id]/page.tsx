@@ -81,73 +81,71 @@ export default function BattleSimulator() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-12">
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-blue-200">
-            <h2 className="text-2xl font-black text-blue-600 mb-6">Your Pokemon</h2>
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+          <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--gold)', padding: '2rem', boxShadow: '4px 4px 0 var(--border)' }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, color: 'var(--ink)', marginBottom: '1.5rem' }}>Your Pokémon</h2>
             {selectedPokemon ? (
-              <div className="text-center">
-                <img src={selectedPokemon.sprite} alt={selectedPokemon.name} className="w-48 h-48 mx-auto object-contain" />
-                <h3 className="text-3xl font-black capitalize mt-4">{selectedPokemon.nickname || selectedPokemon.name}</h3>
-                <div className="flex gap-2 justify-center mt-3">
+              <div style={{ textAlign: 'center' }}>
+                <img src={selectedPokemon.sprite} alt={selectedPokemon.name} style={{ width: '192px', height: '192px', margin: '0 auto', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, textTransform: 'capitalize', marginTop: '1rem' }}>{selectedPokemon.nickname || selectedPokemon.name}</h3>
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '0.75rem' }}>
                   {selectedPokemon.types.map(type => (
-                    <span key={type} className={`${getTypeColor(type)} text-white px-3 py-1 rounded-lg font-bold`}>
+                    <span key={type} style={{ padding: '4px 12px', background: getTypeColor(type).replace('bg-', ''), color: 'white', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', textTransform: 'uppercase' }}>
                       {type}
                     </span>
                   ))}
                 </div>
-                <div className="mt-6">
-                  <div className="flex justify-between mb-2">
-                    <span className="font-bold">HP</span>
-                    <span className="font-bold">{playerHP}/100</span>
+                <div style={{ marginTop: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', fontWeight: 700 }}>HP</span>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', fontWeight: 700 }}>{playerHP}/100</span>
                   </div>
-                  <div className="bg-gray-200 rounded-full h-4">
+                  <div style={{ background: 'var(--border)', height: '16px', position: 'relative' }}>
                     <div 
-                      className="bg-green-500 h-4 rounded-full transition-all duration-300" 
-                      style={{ width: `${playerHP}%` }}
+                      style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${playerHP}%`, background: 'var(--green)', transition: 'width 0.3s' }}
                     />
                   </div>
                 </div>
               </div>
             ) : (
-              <p className="text-center text-gray-500 font-bold">Select a Pokemon below</p>
+              <p style={{ textAlign: 'center', color: 'var(--ink-muted)', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem' }}>Select a Pokémon below</p>
             )}
           </div>
 
-          <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-red-200">
-            <h2 className="text-2xl font-black text-red-600 mb-6">Opponent</h2>
+          <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--red)', padding: '2rem', boxShadow: '4px 4px 0 var(--border)' }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, color: 'var(--red)', marginBottom: '1.5rem' }}>Opponent</h2>
             {opponentPokemon ? (
-              <div className="text-center">
-                <img src={opponentPokemon.sprite} alt={opponentPokemon.name} className="w-48 h-48 mx-auto object-contain" />
-                <h3 className="text-3xl font-black capitalize mt-4">{opponentPokemon.nickname || opponentPokemon.name}</h3>
-                <div className="flex gap-2 justify-center mt-3">
+              <div style={{ textAlign: 'center' }}>
+                <img src={opponentPokemon.sprite} alt={opponentPokemon.name} style={{ width: '192px', height: '192px', margin: '0 auto', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, textTransform: 'capitalize', marginTop: '1rem' }}>{opponentPokemon.nickname || opponentPokemon.name}</h3>
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '0.75rem' }}>
                   {opponentPokemon.types.map(type => (
-                    <span key={type} className={`${getTypeColor(type)} text-white px-3 py-1 rounded-lg font-bold`}>
+                    <span key={type} style={{ padding: '4px 12px', background: getTypeColor(type).replace('bg-', ''), color: 'white', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', textTransform: 'uppercase' }}>
                       {type}
                     </span>
                   ))}
                 </div>
-                <div className="mt-6">
-                  <div className="flex justify-between mb-2">
-                    <span className="font-bold">HP</span>
-                    <span className="font-bold">{opponentHP}/100</span>
+                <div style={{ marginTop: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', fontWeight: 700 }}>HP</span>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', fontWeight: 700 }}>{opponentHP}/100</span>
                   </div>
-                  <div className="bg-gray-200 rounded-full h-4">
+                  <div style={{ background: 'var(--border)', height: '16px', position: 'relative' }}>
                     <div 
-                      className="bg-red-500 h-4 rounded-full transition-all duration-300" 
-                      style={{ width: `${opponentHP}%` }}
+                      style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${opponentHP}%`, background: 'var(--red)', transition: 'width 0.3s' }}
                     />
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="text-center">
-                <p className="text-gray-500 font-bold mb-6">No opponent selected</p>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ color: 'var(--ink-muted)', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', marginBottom: '1.5rem' }}>No opponent selected</p>
                 <button
                   onClick={selectOpponent}
-                  className="bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-3 rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-200 font-black shadow-lg"
+                  style={{ background: 'var(--ink)', border: '2px solid var(--red)', color: 'var(--red)', padding: '0.75rem 1.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', letterSpacing: '0.1em', cursor: 'pointer', boxShadow: '2px 2px 0 var(--red)' }}
                 >
-                  Find Opponent
+                  FIND OPPONENT
                 </button>
               </div>
             )}
@@ -155,56 +153,54 @@ export default function BattleSimulator() {
         </div>
 
         {selectedPokemon && opponentPokemon && (
-          <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-100 mb-8">
-            <h2 className="text-2xl font-black text-gray-900 mb-6">Battle Actions</h2>
-            <div className="flex gap-4">
+          <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--gold)', padding: '2rem', boxShadow: '4px 4px 0 var(--border)', marginBottom: '2rem' }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.5rem' }}>Battle Actions</h2>
+            <div style={{ display: 'flex', gap: '1rem' }}>
               <button
                 onClick={attack}
                 disabled={playerHP === 0 || opponentHP === 0}
-                className="flex-1 bg-gradient-to-r from-orange-600 to-orange-700 text-white px-8 py-4 rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all duration-200 font-black text-lg shadow-lg hover:shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ flex: 1, background: 'var(--ink)', border: '2px solid var(--gold)', color: 'var(--gold)', padding: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', letterSpacing: '0.1em', cursor: 'pointer', boxShadow: '2px 2px 0 var(--gold-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', opacity: (playerHP === 0 || opponentHP === 0) ? 0.5 : 1 }}
               >
-                <Swords size={24} />
-                Attack
+                <Swords size={20} />
+                ATTACK
               </button>
               <button
                 onClick={selectOpponent}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-black text-lg shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+                style={{ flex: 1, background: 'white', border: '1px solid var(--border)', color: 'var(--ink)', padding: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', letterSpacing: '0.1em', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}
               >
-                <Zap size={24} />
-                New Battle
+                <Zap size={20} />
+                NEW BATTLE
               </button>
             </div>
           </div>
         )}
 
-        <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-100 mb-8">
-          <h2 className="text-2xl font-black text-gray-900 mb-6">Battle Log</h2>
-          <div className="bg-gray-50 rounded-xl p-4 h-48 overflow-y-auto border-2 border-gray-200">
+        <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--gold)', padding: '2rem', boxShadow: '4px 4px 0 var(--border)', marginBottom: '2rem' }}>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.5rem' }}>Battle Log</h2>
+          <div style={{ background: 'white', border: '1px solid var(--border)', padding: '1rem', height: '192px', overflowY: 'auto' }}>
             {log.length === 0 ? (
-              <p className="text-gray-500 font-bold text-center">Battle log will appear here...</p>
+              <p style={{ color: 'var(--ink-muted)', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', textAlign: 'center' }}>Battle log will appear here...</p>
             ) : (
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {log.map((entry, i) => (
-                  <p key={i} className="text-gray-700 font-bold">&gt; {entry}</p>
+                  <p key={i} style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', color: 'var(--ink)' }}>&gt; {entry}</p>
                 ))}
               </div>
             )}
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-100">
-          <h2 className="text-2xl font-black text-gray-900 mb-6">Your Team</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--gold)', padding: '2rem', boxShadow: '4px 4px 0 var(--border)' }}>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.5rem' }}>Your Team</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
             {team.pokemon.map((pokemon, i) => (
               <button
                 key={i}
                 onClick={() => switchPokemon(pokemon)}
-                className={`bg-gray-50 rounded-xl p-4 border-2 hover:border-blue-400 transition-all ${
-                  selectedPokemon?.position === pokemon.position ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                }`}
+                style={{ background: selectedPokemon?.position === pokemon.position ? 'rgba(201,168,76,0.1)' : 'white', border: selectedPokemon?.position === pokemon.position ? '2px solid var(--gold)' : '1px solid var(--border)', padding: '1rem', cursor: 'pointer', transition: 'all 0.15s' }}
               >
-                <img src={pokemon.sprite} alt={pokemon.name} className="w-full h-20 object-contain" />
-                <h3 className="font-black capitalize text-center mt-2 text-sm">{pokemon.nickname || pokemon.name}</h3>
+                <img src={pokemon.sprite} alt={pokemon.name} style={{ width: '100%', height: '80px', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.85rem', fontWeight: 700, textAlign: 'center', marginTop: '0.5rem', textTransform: 'capitalize' }}>{pokemon.nickname || pokemon.name}</h3>
               </button>
             ))}
           </div>
