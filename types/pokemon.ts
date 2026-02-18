@@ -1,5 +1,5 @@
 export interface Pokemon {
-  id: number;
+  id: number | string;
   name: string;
   types: string[];
   sprite: string;
