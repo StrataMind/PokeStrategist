@@ -22,6 +22,7 @@ const navItems = [
       { icon: '⊟', label: 'Damage Calculator', href: '/calculator', active: undefined as boolean | undefined },
       { icon: '↗', label: 'EV/IV Calculator', href: '/ev-iv', active: undefined as boolean | undefined },
       { icon: '⊕', label: 'Compare Teams', href: '/compare', active: undefined as boolean | undefined },
+      { icon: '◉', label: 'Pokédex', href: '/pokedex', active: undefined as boolean | undefined },
     ],
   },
   {
