@@ -15,12 +15,14 @@ A professional Pokemon team building platform with enterprise-grade UI/UX design
 ✅ Sort teams (Latest, Name, Favorites)  
 ✅ Search teams by name or Pokemon  
 ✅ Filter teams (All, Favorites)  
+✅ Filter by Pokemon type  
 ✅ Multi-select teams with checkboxes  
 ✅ Bulk operations (Delete, Export, Favorite)  
 ✅ Duplicate teams instantly  
 ✅ Export individual or all teams (JSON)  
 ✅ Import teams from JSON  
 ✅ Import/Export Showdown format  
+✅ Export team as image  
 ✅ Delete with confirmation  
 ✅ Local storage persistence  
 ✅ Undo/Redo system (Ctrl+Z/Y, last 10 actions)  
@@ -30,6 +32,9 @@ A professional Pokemon team building platform with enterprise-grade UI/UX design
 ✅ Recent teams sidebar (last 5 edited)  
 ✅ Keyboard navigation (arrows, enter, delete)  
 ✅ Pokemon hover preview with stats  
+✅ Team stats widget (offensive/defensive coverage)  
+✅ Team comparison tool (side-by-side)  
+✅ Auto-save indicator  
 
 ### Pokemon Features
 ✅ Search with autocomplete suggestions  
@@ -242,6 +247,7 @@ pokestrategist/
 │   │   ├── typeEffectiveness.ts    # Type chart calculations
 │   │   ├── showdown.ts             # Showdown format parser
 │   │   ├── validator.ts            # Format validation
+│   │   ├── teamStats.ts            # Team coverage calculator
 │   │   └── utils.ts                # Helper functions
 ├── types/
 │   ├── pokemon.ts

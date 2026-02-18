@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useTeamStore } from '@/lib/store/teamStore';
-import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon, Calculator, TrendingUp, Home as HomeIcon, Swords, MoreVertical, BarChart3, CheckCircle, Share2, Moon, Sun, Undo, Redo, CheckSquare, Square, Zap, AlertCircle, Info } from 'lucide-react';
+import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon, Calculator, TrendingUp, Home as HomeIcon, Swords, MoreVertical, BarChart3, CheckCircle, Share2, Moon, Sun, Undo, Redo, CheckSquare, Square, Zap, AlertCircle, Info, Image as ImageIcon, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { getTypeColor } from '@/lib/utils';
 import { teamTemplates } from '@/lib/data/templates';
 import { getFormatBadge } from '@/lib/utils/validator';
+import { getTeamCoverage, getTeamTypeFilters } from '@/lib/utils/teamStats';
 
 export default function Home() {
   const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam, toggleFavorite, renameTeam, exportTeam, importTeam, exportAllTeams, importShowdown, exportShowdown, bulkDelete, bulkExport, bulkFavorite, undo, redo, theme, toggleTheme } = useTeamStore();
@@ -29,10 +30,18 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'favorites' | 'size'>('all');
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareTeams, setCompareTeams] = useState<string[]>([]);
+  const [lastSaved, setLastSaved] = useState<Date>(new Date());
 
   useEffect(() => {
     loadTeams();
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    
+    const interval = setInterval(() => {
+      setLastSaved(new Date());
+    }, 1000);
     
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -80,7 +89,10 @@ export default function Home() {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearInterval(interval);
+    };
   }, [loadTeams, theme, undo, redo, selectedTeams, bulkDelete, hoveredTeam]);
 
   const handleCreate = () => {
@@ -156,12 +168,48 @@ export default function Home() {
     if (searchQuery && !team.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
         !team.pokemon.some(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
     if (filterType === 'favorites' && !team.favorite) return false;
+    if (typeFilter !== 'all' && !team.pokemon.some(p => p.types.includes(typeFilter))) return false;
     return true;
   });
 
   const recentTeams = [...teams].sort((a, b) => 
     new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   ).slice(0, 5);
+
+  const availableTypes = getTeamTypeFilters(teams);
+
+  const exportTeamImage = (teamId: string) => {
+    const team = teams.find(t => t.id === teamId);
+    if (!team) return;
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 400;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.fillStyle = theme === 'dark' ? '#1f2937' : '#ffffff';
+    ctx.fillRect(0, 0, 800, 400);
+    ctx.fillStyle = theme === 'dark' ? '#ffffff' : '#000000';
+    ctx.font = 'bold 32px Inter';
+    ctx.fillText(team.name, 40, 60);
+    
+    team.pokemon.forEach((p, i) => {
+      const x = 40 + (i % 3) * 240;
+      const y = 120 + Math.floor(i / 3) * 140;
+      ctx.font = '18px Inter';
+      ctx.fillText(p.nickname || p.name, x, y + 100);
+    });
+    
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${team.name}.png`;
+      a.click();
+    });
+  };
 
   const commands = [
     { name: 'Create New Team', action: () => setShowCreate(true) },
@@ -250,6 +298,13 @@ export default function Home() {
             {selectedTeams.length > 0 && (
               <span className="text-sm text-blue-600 font-medium">{selectedTeams.length} selected</span>
             )}
+            {compareMode && (
+              <span className="text-sm text-purple-600 font-medium">Compare Mode ({compareTeams.length}/2)</span>
+            )}
+            <div className={`flex items-center gap-1 text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              <Clock size={12} />
+              <span>Saved {Math.floor((new Date().getTime() - lastSaved.getTime()) / 1000)}s ago</span>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <input
@@ -268,6 +323,17 @@ export default function Home() {
             >
               <option value="all">All Teams</option>
               <option value="favorites">Favorites</option>
+            </select>
+            <select 
+              value={typeFilter} 
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className={`px-3 py-2 border text-sm font-medium ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-300' : 'bg-white border-gray-300 text-gray-700'}`}
+              style={{ borderRadius: '4px' }}
+            >
+              <option value="all">All Types</option>
+              {availableTypes.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
             </select>
             <select 
               value={sortBy} 
@@ -292,6 +358,9 @@ export default function Home() {
                 </button>
               </>
             )}
+            <button onClick={() => { setCompareMode(!compareMode); setCompareTeams([]); }} className={`px-3 py-2 font-medium text-xs ${compareMode ? 'bg-purple-600 text-white' : theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`} style={{ borderRadius: '4px' }} title="Compare Teams">
+              Compare
+            </button>
             <button onClick={toggleTheme} className={`p-2 ${theme === 'dark' ? 'bg-gray-700 text-yellow-400' : 'bg-gray-200 text-gray-700'}`} style={{ borderRadius: '4px' }} title="Toggle Theme">
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </button>
@@ -486,14 +555,25 @@ export default function Home() {
               );
               const avgStat = team.pokemon.length > 0 ? Math.round(totalStats / team.pokemon.length) : 0;
               const validation = getFormatBadge(team);
+              const coverage = getTeamCoverage(team);
+              const isCompareSelected = compareTeams.includes(team.id);
               
               return (
               <div 
                 key={team.id} 
-                className={`border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} ${hoveredTeam === team.id ? 'ring-2 ring-blue-500' : ''}`} 
+                className={`border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} ${hoveredTeam === team.id ? 'ring-2 ring-blue-500' : ''} ${isCompareSelected ? 'ring-2 ring-purple-500' : ''}`} 
                 style={{ borderRadius: '4px' }}
                 onMouseEnter={() => setHoveredTeam(team.id)}
                 onMouseLeave={() => setHoveredTeam(null)}
+                onClick={() => {
+                  if (compareMode) {
+                    if (isCompareSelected) {
+                      setCompareTeams(compareTeams.filter(id => id !== team.id));
+                    } else if (compareTeams.length < 2) {
+                      setCompareTeams([...compareTeams, team.id]);
+                    }
+                  }
+                }}
               >
                 <div className={`p-5 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
                   <div className="flex justify-between items-start mb-2">
@@ -555,6 +635,25 @@ export default function Home() {
                     )}
                   </div>
                 </div>
+                
+                {team.pokemon.length > 0 && (
+                  <div className={`px-5 py-3 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Offensive</span>
+                      <span className={`font-medium ${coverage.offensive > 50 ? 'text-green-600' : 'text-yellow-600'}`}>{coverage.offensive}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 h-1.5" style={{ borderRadius: '2px' }}>
+                      <div className="bg-green-500 h-1.5" style={{ width: `${coverage.offensive}%`, borderRadius: '2px' }} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs mb-1 mt-2">
+                      <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Defensive</span>
+                      <span className={`font-medium ${coverage.defensive > 50 ? 'text-green-600' : 'text-red-600'}`}>{coverage.defensive}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 h-1.5" style={{ borderRadius: '2px' }}>
+                      <div className="bg-blue-500 h-1.5" style={{ width: `${coverage.defensive}%`, borderRadius: '2px' }} />
+                    </div>
+                  </div>
+                )}
                 
                 <div className="p-5">
                   <div className="grid grid-cols-3 gap-2 mb-4">
@@ -658,6 +757,13 @@ export default function Home() {
                           Copy Showdown
                         </button>
                         <button
+                          onClick={() => { exportTeamImage(team.id); setOpenDropdown(null); }}
+                          className={`w-full flex items-center gap-2 px-4 py-2 text-sm border-b text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 border-gray-700' : 'text-gray-700 hover:bg-gray-50 border-gray-100'}`}
+                        >
+                          <ImageIcon size={14} />
+                          Export Image
+                        </button>
+                        <button
                           onClick={() => { duplicateTeam(team.id); setOpenDropdown(null); }}
                           className={`w-full flex items-center gap-2 px-4 py-2 text-sm border-b text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 border-gray-700' : 'text-gray-700 hover:bg-gray-50 border-gray-100'}`}
                         >
@@ -692,6 +798,54 @@ export default function Home() {
               >
                 Get Started
               </button>
+            </div>
+          )}
+
+          {compareTeams.length === 2 && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => { setCompareTeams([]); setCompareMode(false); }}>
+              <div className={`w-full max-w-6xl border max-h-[80vh] overflow-y-auto ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`} style={{ borderRadius: '4px' }} onClick={(e) => e.stopPropagation()}>
+                <div className={`p-6 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Team Comparison</h3>
+                </div>
+                <div className="p-6 grid grid-cols-2 gap-6">
+                  {compareTeams.map(teamId => {
+                    const team = teams.find(t => t.id === teamId);
+                    if (!team) return null;
+                    const coverage = getTeamCoverage(team);
+                    const avgStat = team.pokemon.length > 0 ? Math.round(team.pokemon.reduce((sum, p) => sum + Object.values(p.stats).reduce((a, b) => a + b, 0), 0) / team.pokemon.length) : 0;
+                    return (
+                      <div key={teamId} className={`border p-4 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`} style={{ borderRadius: '4px' }}>
+                        <h4 className={`font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{team.name}</h4>
+                        <div className="space-y-3">
+                          <div>
+                            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Avg Stats: {avgStat}</p>
+                          </div>
+                          <div>
+                            <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Offensive: {coverage.offensive}%</p>
+                            <div className="w-full bg-gray-200 h-2" style={{ borderRadius: '2px' }}>
+                              <div className="bg-green-500 h-2" style={{ width: `${coverage.offensive}%`, borderRadius: '2px' }} />
+                            </div>
+                          </div>
+                          <div>
+                            <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Defensive: {coverage.defensive}%</p>
+                            <div className="w-full bg-gray-200 h-2" style={{ borderRadius: '2px' }}>
+                              <div className="bg-blue-500 h-2" style={{ width: `${coverage.defensive}%`, borderRadius: '2px' }} />
+                            </div>
+                          </div>
+                          <div>
+                            <p className={`text-sm mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Pokemon:</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {team.pokemon.map(p => (
+                                <img key={p.position} src={p.sprite} alt={p.name} className="w-full" />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
