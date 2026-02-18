@@ -13,11 +13,18 @@ A professional Pokemon team building platform with enterprise-grade UI/UX design
 ✅ Rename teams inline with edit icon  
 ✅ Favorite/star teams for quick access  
 ✅ Sort teams (Latest, Name, Favorites)  
+✅ Search teams by name or Pokemon  
+✅ Filter teams (All, Favorites)  
+✅ Multi-select teams with checkboxes  
+✅ Bulk operations (Delete, Export, Favorite)  
 ✅ Duplicate teams instantly  
 ✅ Export individual or all teams (JSON)  
 ✅ Import teams from JSON  
 ✅ Delete with confirmation  
 ✅ Local storage persistence  
+✅ Undo/Redo system (Ctrl+Z/Y, last 10 actions)  
+✅ Dark mode toggle  
+✅ Team templates (6 pre-built teams)  
 
 ### Pokemon Features
 ✅ Search with autocomplete suggestions  
@@ -115,6 +122,22 @@ npm run dev
 
 ## 📖 Usage
 
+### Power User Features
+- **Command Palette (Ctrl+K):** Quick access to all actions
+- **Keyboard Shortcuts:**
+  - `Ctrl+K` - Open command palette
+  - `Ctrl+N` - Create new team
+  - `Ctrl+Z` - Undo last action
+  - `Ctrl+Y` or `Ctrl+Shift+Z` - Redo action
+  - `Esc` - Close modals
+- **Multi-Select:** Click checkboxes to select multiple teams
+- **Bulk Actions:** Delete, export, or favorite multiple teams at once
+- **Search:** Find teams by name or Pokemon
+- **Filter:** Show all teams or favorites only
+- **Dark Mode:** Toggle theme with moon/sun icon
+- **Undo/Redo:** Last 10 actions stored in history
+- **Templates:** Start from 6 pre-built competitive/casual teams
+
 ### Dashboard Navigation
 - **My Teams** - View and manage all teams
 - **Damage Calculator** - Calculate battle damage
@@ -124,19 +147,27 @@ npm run dev
 
 ### Team Management
 1. **Create Team:** Click "New Team", enter name and size (1-6)
-2. **Edit Team:** Click "Edit" on any team card
-3. **Rename Team:** Hover over team name and click edit icon
-4. **Favorite Team:** Click star icon to mark as favorite
-5. **Sort Teams:** Use dropdown to sort by Latest, Name, or Favorites
-6. **Analytics:** Click 📊 icon to view team analytics
-7. **Battle:** Click ⚔️ icon to start battle simulator
-8. **Validate:** Click ✓ icon to validate for competitive formats
-9. **Share:** Click 🔗 icon to generate shareable link
-10. **Export:** Click download icon to save team as JSON
-11. **Export All:** Click "Export All" to download all teams
-12. **Import:** Click "Import" to load team from JSON
-13. **Duplicate:** Click copy icon to duplicate team
-14. **Delete:** Click trash icon twice to confirm deletion
+2. **Start from Template:** Click "Templates" in sidebar for pre-built teams
+3. **Search Teams:** Type in search bar to find teams by name or Pokemon
+4. **Filter Teams:** Use dropdown to show All or Favorites only
+5. **Multi-Select:** Click checkboxes on team cards to select multiple
+6. **Bulk Favorite:** Select teams and click star icon to favorite all
+7. **Bulk Export:** Select teams and click download icon to export
+8. **Bulk Delete:** Select teams and click trash icon to delete all
+9. **Edit Team:** Click "Edit" on any team card
+10. **Rename Team:** Hover over team name and click edit icon
+11. **Favorite Team:** Click star icon to mark as favorite
+12. **Sort Teams:** Use dropdown to sort by Latest, Name, or Favorites
+13. **Analytics:** Click 📊 icon to view team analytics
+14. **Battle:** Click ⚔️ icon to start battle simulator
+15. **Validate:** Click ✓ icon to validate for competitive formats
+16. **Share:** Click 🔗 icon to generate shareable link
+17. **Export:** Click download icon to save team as JSON
+18. **Export All:** Click "Export All" to download all teams
+19. **Import:** Click "Import" to load team from JSON
+20. **Duplicate:** Click copy icon to duplicate team
+21. **Delete:** Click trash icon twice to confirm deletion
+22. **Undo/Redo:** Use Ctrl+Z/Y or buttons in header
 
 ### Pokemon Customization
 1. Click ⚙️ (Settings) icon on any Pokemon
@@ -189,7 +220,9 @@ pokestrategist/
 ├── lib/
 │   ├── api/pokeapi.ts              # PokeAPI integration
 │   ├── store/teamStore.ts          # Zustand store
-│   ├── data/gameData.ts            # Natures, items
+│   ├── data/
+│   │   ├── gameData.ts             # Natures, items
+│   │   └── templates.ts            # Team templates
 │   ├── utils/
 │   │   ├── typeEffectiveness.ts    # Type chart calculations
 │   │   └── utils.ts                # Helper functions

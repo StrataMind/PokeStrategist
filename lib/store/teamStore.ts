@@ -4,6 +4,9 @@ import { Team, TeamPokemon } from '@/types/team';
 interface TeamStore {
   teams: Team[];
   currentTeam: Team | null;
+  history: Team[][];
+  historyIndex: number;
+  theme: 'light' | 'dark';
   loadTeams: () => void;
   createTeam: (name: string, maxSize: number) => void;
   deleteTeam: (id: string) => void;
@@ -18,17 +21,27 @@ interface TeamStore {
   exportTeam: (teamId: string) => string;
   importTeam: (jsonData: string) => void;
   exportAllTeams: () => string;
+  bulkDelete: (ids: string[]) => void;
+  bulkExport: (ids: string[]) => string;
+  bulkFavorite: (ids: string[]) => void;
+  undo: () => void;
+  redo: () => void;
+  toggleTheme: () => void;
 }
 
 export const useTeamStore = create<TeamStore>((set, get) => ({
   teams: [],
   currentTeam: null,
+  history: [],
+  historyIndex: -1,
+  theme: (typeof window !== 'undefined' ? localStorage.getItem('theme') as 'light' | 'dark' : 'light') || 'light',
 
   loadTeams: () => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('teams');
       if (stored) {
-        set({ teams: JSON.parse(stored) });
+        const teams = JSON.parse(stored);
+        set({ teams, history: [teams], historyIndex: 0 });
       }
     }
   },
@@ -43,13 +56,15 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     const teams = [...get().teams, newTeam];
-    set({ teams });
+    const history = [...get().history.slice(0, get().historyIndex + 1), teams].slice(-10);
+    set({ teams, history, historyIndex: history.length - 1 });
     localStorage.setItem('teams', JSON.stringify(teams));
   },
 
   deleteTeam: (id: string) => {
     const teams = get().teams.filter(t => t.id !== id);
-    set({ teams, currentTeam: get().currentTeam?.id === id ? null : get().currentTeam });
+    const history = [...get().history.slice(0, get().historyIndex + 1), teams].slice(-10);
+    set({ teams, currentTeam: get().currentTeam?.id === id ? null : get().currentTeam, history, historyIndex: history.length - 1 });
     localStorage.setItem('teams', JSON.stringify(teams));
   },
 
@@ -177,5 +192,48 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
 
   exportAllTeams: () => {
     return JSON.stringify(get().teams, null, 2);
+  },
+
+  bulkDelete: (ids: string[]) => {
+    const teams = get().teams.filter(t => !ids.includes(t.id));
+    const history = [...get().history.slice(0, get().historyIndex + 1), teams].slice(-10);
+    set({ teams, history, historyIndex: history.length - 1 });
+    localStorage.setItem('teams', JSON.stringify(teams));
+  },
+
+  bulkExport: (ids: string[]) => {
+    const teams = get().teams.filter(t => ids.includes(t.id));
+    return JSON.stringify(teams, null, 2);
+  },
+
+  bulkFavorite: (ids: string[]) => {
+    const teams = get().teams.map(t => ids.includes(t.id) ? { ...t, favorite: true } : t);
+    set({ teams });
+    localStorage.setItem('teams', JSON.stringify(teams));
+  },
+
+  undo: () => {
+    const { history, historyIndex } = get();
+    if (historyIndex > 0) {
+      const teams = history[historyIndex - 1];
+      set({ teams, historyIndex: historyIndex - 1 });
+      localStorage.setItem('teams', JSON.stringify(teams));
+    }
+  },
+
+  redo: () => {
+    const { history, historyIndex } = get();
+    if (historyIndex < history.length - 1) {
+      const teams = history[historyIndex + 1];
+      set({ teams, historyIndex: historyIndex + 1 });
+      localStorage.setItem('teams', JSON.stringify(teams));
+    }
+  },
+
+  toggleTheme: () => {
+    const theme = get().theme === 'light' ? 'dark' : 'light';
+    set({ theme });
+    localStorage.setItem('theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
   },
 }));
