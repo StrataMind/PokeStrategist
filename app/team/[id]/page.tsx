@@ -160,44 +160,42 @@ export default function TeamEditor() {
   if (!team) return null;
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white border-b border-gray-200 h-16 flex items-center px-8">
-        <Link href="/" className="text-gray-600 hover:text-blue-900 transition-colors">
+    <div style={{ minHeight: '100vh', background: 'var(--cream)', fontFamily: "'Libre Baskerville', Georgia, serif" }}>
+      <header style={{ height: '64px', background: 'var(--parchment)', borderBottom: '2px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 2rem', gap: '1rem' }}>
+        <Link href="/" style={{ color: 'var(--ink-muted)', textDecoration: 'none' }}>
           <ArrowLeft size={20} />
         </Link>
-        <div className="ml-4">
-          <h1 className="text-xl font-semibold text-gray-900">{team.name}</h1>
-          <p className="text-xs text-gray-600">{team.pokemon.length}/{team.maxSize} Pokemon</p>
+        <div>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', fontWeight: 700, color: 'var(--ink)' }}>{team.name}</h1>
+          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', color: 'var(--ink-muted)', letterSpacing: '0.1em' }}>{team.pokemon.length}/{team.maxSize} Pokémon</p>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-8 py-6">
-        <div className="flex justify-between items-center mb-6">
+      <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           {team.pokemon.length > 0 && (
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-3 py-2 bg-white border border-gray-300 font-medium text-sm text-gray-700"
-              style={{ borderRadius: '4px' }}
+              style={{ background: 'white', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', padding: '0.5rem 2rem 0.5rem 0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', outline: 'none', cursor: 'pointer' }}
             >
               <option value="">All Types</option>
               {Array.from(new Set(team.pokemon.flatMap(p => p.types))).map(type => (
-                <option key={type} value={type} className="capitalize">{type}</option>
+                <option key={type} value={type} style={{ textTransform: 'capitalize' }}>{type}</option>
               ))}
             </select>
           )}
           {team.pokemon.length < team.maxSize && (
             <button
               onClick={handleRandomTeam}
-              className="ml-auto flex items-center gap-2 bg-blue-900 text-white px-4 py-2 font-medium text-sm"
-              style={{ borderRadius: '4px' }}
+              style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--ink)', border: '2px solid var(--gold)', color: 'var(--gold)', padding: '0.6rem 1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', cursor: 'pointer', boxShadow: '2px 2px 0 var(--gold-dark)' }}
             >
               <Shuffle size={16} />
-              Random Pokemon
+              RANDOM
             </button>
           )}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
           {Array.from({ length: team.maxSize }).map((_, i) => {
             const pokemon = team.pokemon.find(p => p.position === i);
             if (filterType && pokemon && !pokemon.types.includes(filterType)) return null;
@@ -208,65 +206,62 @@ export default function TeamEditor() {
                 onDragStart={() => pokemon && handleDragStart(i)}
                 onDragOver={(e) => handleDragOver(e, i)}
                 onDragEnd={handleDragEnd}
-                className={`bg-white p-5 border ${
-                  pokemon ? 'border-gray-200 cursor-move hover:border-blue-900' : 'border-dashed border-gray-300'
-                } transition-colors`}
-                style={{ borderRadius: '4px' }}
+                style={{ background: 'var(--parchment)', border: pokemon ? '1px solid var(--border)' : '2px dashed var(--border)', borderTop: pokemon ? '4px solid var(--gold)' : 'none', boxShadow: pokemon ? '4px 4px 0 var(--border)' : 'none', cursor: pokemon ? 'move' : 'pointer', transition: 'all 0.15s' }}
               >
                 {pokemon ? (
                   <div>
-                    <div className="relative">
+                    <div style={{ position: 'relative', padding: '1rem' }}>
                       <img 
                         src={pokemon.sprite} 
                         alt={pokemon.name} 
-                        className="w-full h-32 object-contain cursor-pointer hover:scale-110 transition"
+                        style={{ width: '100%', height: '128px', objectFit: 'contain', cursor: 'pointer', imageRendering: 'pixelated' }}
                         onClick={() => setViewingPokemon(pokemon)}
                       />
                       <button
                         onClick={() => removePokemon(team.id, i)}
-                        className="absolute top-0 right-0 bg-red-600 text-white p-1"
-                        style={{ borderRadius: '4px' }}
+                        style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'var(--red)', color: 'white', border: 'none', padding: '0.25rem', cursor: 'pointer' }}
                       >
                         <X size={14} />
                       </button>
                       <button
                         onClick={() => setEditingPokemon(pokemon)}
-                        className="absolute top-0 left-0 bg-blue-900 text-white p-1"
-                        style={{ borderRadius: '4px' }}
+                        style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', background: 'var(--ink)', border: '1px solid var(--gold)', color: 'var(--gold)', padding: '0.25rem', cursor: 'pointer' }}
                       >
                         <Settings size={14} />
                       </button>
                     </div>
-                    <h3 className="font-semibold capitalize text-center mt-2 text-gray-900">
-                      {pokemon.nickname || pokemon.name}
-                    </h3>
-                    <div className="flex gap-1 justify-center mt-2">
-                      {pokemon.types.map(type => (
-                        <span key={type} className={`${getTypeColor(type)} text-white text-xs px-2 py-1 rounded`}>
-                          {type}
-                        </span>
-                      ))}
-                    </div>
-                    {pokemon.nature && (
-                      <p className="text-xs text-center text-gray-600 mt-1">{pokemon.nature} Nature</p>
-                    )}
-                    {pokemon.item && (
-                      <p className="text-xs text-center text-gray-600">@ {pokemon.item}</p>
-                    )}
-                    {pokemon.selectedMoves && pokemon.selectedMoves.length > 0 && (
-                      <div className="mt-2 text-xs text-gray-600">
-                        {pokemon.selectedMoves.map(move => (
-                          <div key={move} className="capitalize">{move.replace('-', ' ')}</div>
+                    <div style={{ padding: '0 1rem 1rem' }}>
+                      <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, textAlign: 'center', textTransform: 'capitalize', marginBottom: '0.5rem' }}>
+                        {pokemon.nickname || pokemon.name}
+                      </h3>
+                      <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', marginBottom: '0.5rem' }}>
+                        {pokemon.types.map(type => (
+                          <span key={type} style={{ fontSize: '0.65rem', padding: '2px 8px', background: getTypeColor(type).replace('bg-', ''), color: 'white', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
+                            {type}
+                          </span>
                         ))}
                       </div>
-                    )}
+                      {pokemon.nature && (
+                        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', textAlign: 'center', color: 'var(--ink-muted)', marginBottom: '0.25rem' }}>{pokemon.nature} Nature</p>
+                      )}
+                      {pokemon.item && (
+                        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', textAlign: 'center', color: 'var(--ink-muted)' }}>@ {pokemon.item}</p>
+                      )}
+                      {pokemon.selectedMoves && pokemon.selectedMoves.length > 0 && (
+                        <div style={{ marginTop: '0.75rem', fontSize: '0.7rem', color: 'var(--ink-muted)', fontFamily: "'DM Mono', monospace" }}>
+                          {pokemon.selectedMoves.map(move => (
+                            <div key={move} style={{ textTransform: 'capitalize', marginBottom: '2px' }}>• {move.replace('-', ' ')}</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <button
                     onClick={() => setShowSearch(true)}
-                    className="w-full h-full min-h-[200px] flex items-center justify-center text-gray-400 hover:text-blue-900"
+                    style={{ width: '100%', height: '100%', minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--border)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '3rem' }}
                   >
-                    <span className="text-4xl">+</span>
+                    +
                   </button>
                 )}
               </div>
@@ -275,32 +270,34 @@ export default function TeamEditor() {
         </div>
 
         {showSearch && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-gray-200" style={{ borderRadius: '4px' }}>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Add Pokemon</h2>
-                <button onClick={() => setShowSearch(false)} className="text-gray-500 hover:text-gray-700">
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 50 }}>
+            <div style={{ background: 'var(--parchment)', border: '2px solid var(--gold)', padding: '2rem', maxWidth: '800px', width: '100%', maxHeight: '80vh', overflowY: 'auto', boxShadow: '8px 8px 0 var(--border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', fontWeight: 700 }}>Add Pokémon</h2>
+                <button onClick={() => setShowSearch(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-muted)' }}>
                   <X size={24} />
                 </button>
               </div>
               
-              <div className="flex gap-2 mb-4 relative">
-                <div className="flex-1 relative">
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', position: 'relative' }}>
+                <div style={{ flex: 1, position: 'relative' }}>
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    placeholder="Search Pokemon..."
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="Search Pokémon..."
+                    style={{ width: '100%', padding: '0.75rem', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', outline: 'none' }}
                   />
                   {suggestions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto z-10">
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '2px solid var(--gold)', boxShadow: '4px 4px 0 var(--border)', marginTop: '0.25rem', maxHeight: '240px', overflowY: 'auto', zIndex: 10 }}>
                       {suggestions.map((name) => (
                         <button
                           key={name}
                           onClick={() => handleSuggestionClick(name)}
-                          className="w-full text-left px-4 py-2 hover:bg-blue-50 capitalize font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                          style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', textTransform: 'capitalize', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', cursor: 'pointer', color: 'var(--ink)' }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(201,168,76,0.1)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                         >
                           {name}
                         </button>
@@ -310,26 +307,27 @@ export default function TeamEditor() {
                 </div>
                 <button
                   onClick={handleSearch}
-                  className="bg-blue-900 text-white px-4 py-2 flex items-center gap-2 font-medium text-sm"
-                  style={{ borderRadius: '4px' }}
+                  style={{ background: 'var(--ink)', border: '2px solid var(--gold)', color: 'var(--gold)', padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', cursor: 'pointer', boxShadow: '2px 2px 0 var(--gold-dark)' }}
                 >
                   <Search size={16} />
-                  Search
+                  SEARCH
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
                 {searchResults.map(pokemon => (
                   <button
                     key={pokemon.id}
                     onClick={() => handleAddPokemon(pokemon)}
-                    className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition"
+                    style={{ background: 'white', border: '1px solid var(--border)', padding: '1rem', cursor: 'pointer', transition: 'all 0.15s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--gold)'}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
                   >
-                    <img src={pokemon.sprite} alt={pokemon.name} className="w-full h-24 object-contain" />
-                    <h3 className="font-semibold capitalize text-center mt-2">{pokemon.name}</h3>
-                    <div className="flex gap-1 justify-center mt-2">
+                    <img src={pokemon.sprite} alt={pokemon.name} style={{ width: '100%', height: '96px', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                    <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.9rem', fontWeight: 700, textAlign: 'center', marginTop: '0.5rem', textTransform: 'capitalize' }}>{pokemon.name}</h3>
+                    <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', marginTop: '0.5rem' }}>
                       {pokemon.types.map(type => (
-                        <span key={type} className={`${getTypeColor(type)} text-white text-xs px-2 py-1 rounded`}>
+                        <span key={type} style={{ fontSize: '0.6rem', padding: '2px 6px', background: getTypeColor(type).replace('bg-', ''), color: 'white', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
                           {type}
                         </span>
                       ))}
