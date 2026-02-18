@@ -10,21 +10,21 @@ import { getFormatBadge } from '@/lib/utils/validator';
 import { getTeamCoverage, getTeamTypeFilters } from '@/lib/utils/teamStats';
 
 const navItems = [
-  { section: 'MAIN', items: [{ icon: '⊞', label: 'My Teams', href: '/', active: true }] },
+  { section: 'MAIN', items: [{ icon: '⊞', label: 'My Teams', href: '/', active: true as boolean | undefined }] },
   {
     section: 'TOOLS',
     items: [
-      { icon: '⊟', label: 'Damage Calculator', href: '/calculator' },
-      { icon: '↗', label: 'EV/IV Calculator', href: '/ev-iv' },
+      { icon: '⊟', label: 'Damage Calculator', href: '/calculator', active: undefined as boolean | undefined },
+      { icon: '↗', label: 'EV/IV Calculator', href: '/ev-iv', active: undefined as boolean | undefined },
     ],
   },
   {
     section: 'ACTIONS',
     items: [
-      { icon: '⊡', label: 'Templates', href: '#' },
-      { icon: '↑', label: 'Import Team', href: '#' },
-      { icon: '↑', label: 'Import Showdown', href: '#' },
-      { icon: '↓', label: 'Export All', href: '#' },
+      { icon: '⊡', label: 'Templates', href: '#', active: undefined as boolean | undefined },
+      { icon: '↑', label: 'Import Team', href: '#', active: undefined as boolean | undefined },
+      { icon: '↑', label: 'Import Showdown', href: '#', active: undefined as boolean | undefined },
+      { icon: '↓', label: 'Export All', href: '#', active: undefined as boolean | undefined },
     ],
   },
 ];
