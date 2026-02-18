@@ -9,14 +9,29 @@ import { teamTemplates } from '@/lib/data/templates';
 import { getFormatBadge } from '@/lib/utils/validator';
 import { getTeamCoverage, getTeamTypeFilters } from '@/lib/utils/teamStats';
 
+const navItems = [
+  { section: 'MAIN', items: [{ icon: '⊞', label: 'My Teams', href: '/', active: true }] },
+  {
+    section: 'TOOLS',
+    items: [
+      { icon: '⊟', label: 'Damage Calculator', href: '/calculator' },
+      { icon: '↗', label: 'EV/IV Calculator', href: '/ev-iv' },
+    ],
+  },
+  {
+    section: 'ACTIONS',
+    items: [
+      { icon: '⊡', label: 'Templates', href: '#' },
+      { icon: '↑', label: 'Import Team', href: '#' },
+      { icon: '↑', label: 'Import Showdown', href: '#' },
+      { icon: '↓', label: 'Export All', href: '#' },
+    ],
+  },
+];
+
 export default function Home() {
   const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam, toggleFavorite, renameTeam, exportTeam, importTeam, exportAllTeams, importShowdown, exportShowdown, bulkDelete, bulkExport, bulkFavorite, undo, redo, theme, toggleTheme } = useTeamStore();
   const [showCreate, setShowCreate] = useState(false);
-  const [showImport, setShowImport] = useState(false);
-  const [showShowdownImport, setShowShowdownImport] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [importData, setImportData] = useState('');
-  const [showdownData, setShowdownData] = useState('');
   const [teamName, setTeamName] = useState('');
   const [teamSize, setTeamSize] = useState(6);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -24,76 +39,14 @@ export default function Home() {
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
-  const [commandSearch, setCommandSearch] = useState('');
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'favorites' | 'size'>('all');
-  const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<'all' | 'favorites'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [compareMode, setCompareMode] = useState(false);
-  const [compareTeams, setCompareTeams] = useState<string[]>([]);
-  const [lastSaved, setLastSaved] = useState<Date>(new Date());
 
   useEffect(() => {
     loadTeams();
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    
-    const interval = setInterval(() => {
-      setLastSaved(new Date());
-    }, 1000);
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setShowCommandPalette(true);
-      }
-      if (e.key === 'Escape') {
-        setShowCommandPalette(false);
-        setOpenDropdown(null);
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
-        e.preventDefault();
-        setShowCreate(true);
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      }
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
-        e.preventDefault();
-        redo();
-      }
-      if (e.key === 'Delete' && selectedTeams.length > 0) {
-        if (confirm(`Delete ${selectedTeams.length} teams?`)) {
-          bulkDelete(selectedTeams);
-          setSelectedTeams([]);
-        }
-      }
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const filtered = sortedTeams.filter(team => {
-          if (searchQuery && !team.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
-              !team.pokemon.some(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
-          if (filterType === 'favorites' && !team.favorite) return false;
-          return true;
-        });
-        const currentIndex = filtered.findIndex(t => t.id === hoveredTeam);
-        const nextIndex = e.key === 'ArrowDown' ? currentIndex + 1 : currentIndex - 1;
-        if (nextIndex >= 0 && nextIndex < filtered.length) {
-          setHoveredTeam(filtered[nextIndex].id);
-        }
-      }
-      if (e.key === 'Enter' && hoveredTeam) {
-        window.location.href = `/team/${hoveredTeam}`;
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      clearInterval(interval);
-    };
-  }, [loadTeams, theme, undo, redo, selectedTeams, bulkDelete, hoveredTeam]);
+  }, [loadTeams]);
 
   const handleCreate = () => {
     if (teamName.trim()) {
@@ -112,42 +65,6 @@ export default function Home() {
       setDeleteConfirm(id);
       setTimeout(() => setDeleteConfirm(null), 3000);
     }
-  };
-
-  const handleExport = (id: string) => {
-    const json = exportTeam(id);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `team-${id}.json`;
-    a.click();
-  };
-
-  const handleImport = () => {
-    if (importData.trim()) {
-      importTeam(importData);
-      setImportData('');
-      setShowImport(false);
-    }
-  };
-
-  const handleShowdownImport = () => {
-    if (showdownData.trim()) {
-      importShowdown(showdownData);
-      setShowdownData('');
-      setShowShowdownImport(false);
-    }
-  };
-
-  const handleExportAll = () => {
-    const json = exportAllTeams();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `all-teams-${Date.now()}.json`;
-    a.click();
   };
 
   const handleRename = (id: string) => {
@@ -178,680 +95,167 @@ export default function Home() {
 
   const availableTypes = getTeamTypeFilters(teams);
 
-  const exportTeamImage = (teamId: string) => {
-    const team = teams.find(t => t.id === teamId);
-    if (!team) return;
-    
-    const canvas = document.createElement('canvas');
-    canvas.width = 800;
-    canvas.height = 400;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    ctx.fillStyle = theme === 'dark' ? '#1f2937' : '#ffffff';
-    ctx.fillRect(0, 0, 800, 400);
-    ctx.fillStyle = theme === 'dark' ? '#ffffff' : '#000000';
-    ctx.font = 'bold 32px Inter';
-    ctx.fillText(team.name, 40, 60);
-    
-    team.pokemon.forEach((p, i) => {
-      const x = 40 + (i % 3) * 240;
-      const y = 120 + Math.floor(i / 3) * 140;
-      ctx.font = '18px Inter';
-      ctx.fillText(p.nickname || p.name, x, y + 100);
-    });
-    
-    canvas.toBlob(blob => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${team.name}.png`;
-      a.click();
-    });
-  };
-
-  const commands = [
-    { name: 'Create New Team', action: () => setShowCreate(true) },
-    { name: 'Start from Template', action: () => setShowTemplates(true) },
-    { name: 'Import Team (JSON)', action: () => setShowImport(true) },
-    { name: 'Import from Showdown', action: () => setShowShowdownImport(true) },
-    { name: 'Damage Calculator', action: () => window.location.href = '/calculator' },
-    { name: 'EV/IV Calculator', action: () => window.location.href = '/ev-iv' },
-    { name: 'Toggle Dark Mode', action: () => toggleTheme() },
-    ...sortedTeams.map(team => ({
-      name: `Open ${team.name}`,
-      action: () => window.location.href = `/team/${team.id}`
-    }))
-  ];
-
-  const filteredCommands = commands.filter(cmd => 
-    cmd.name.toLowerCase().includes(commandSearch.toLowerCase())
-  );
-
   return (
-    <div className={`min-h-screen flex ${theme === 'dark' ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--cream)', fontFamily: "'Libre Baskerville', Georgia, serif" }}>
+      
       {/* Sidebar */}
-      <aside className={`w-64 border-r fixed h-full ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-        <div className={`p-6 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 flex items-center justify-center">
-              <span className="text-white text-xl font-bold">⚡</span>
-            </div>
+      <aside style={{ width: '220px', minHeight: '100vh', background: 'var(--ink)', borderRight: '3px solid var(--gold)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '1.5rem 1.25rem', borderBottom: '1px solid rgba(201,168,76,0.3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <div style={{ width: '32px', height: '32px', background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>⚡</div>
             <div>
-              <h1 className={`text-base font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>PokeStrategist</h1>
-              <p className="text-xs text-gray-500">Team Builder</p>
+              <div style={{ fontFamily: "'Playfair Display', serif", color: 'var(--cream)', fontSize: '0.95rem', fontWeight: 700, lineHeight: 1.1 }}>PokeStrategist</div>
+              <div style={{ fontFamily: "'DM Mono', monospace", color: 'var(--ink-muted)', fontSize: '0.6rem', letterSpacing: '0.1em' }}>TEAM BUILDER</div>
             </div>
           </div>
         </div>
-        <nav className="p-4">
-          <div className={`text-xs font-semibold uppercase tracking-wide mb-2 px-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Main</div>
-          <Link href="/" className={`flex items-center gap-3 px-4 py-2.5 font-medium mb-1 ${theme === 'dark' ? 'text-white bg-blue-600' : 'text-white bg-blue-600'}`}>
-            <HomeIcon size={18} />
-            My Teams
-          </Link>
-          <div className={`text-xs font-semibold uppercase tracking-wide mb-2 px-4 mt-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Tools</div>
-          <Link href="/calculator" className={`flex items-center gap-3 px-4 py-2.5 font-medium mb-1 ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
-            <Calculator size={18} />
-            Damage Calculator
-          </Link>
-          <Link href="/ev-iv" className={`flex items-center gap-3 px-4 py-2.5 font-medium mb-1 ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
-            <TrendingUp size={18} />
-            EV/IV Calculator
-          </Link>
-          <div className={`text-xs font-semibold uppercase tracking-wide mb-2 px-4 mt-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Actions</div>
-          <button onClick={() => setShowTemplates(true)} className={`w-full flex items-center gap-3 px-4 py-2.5 font-medium mb-1 text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
-            <Zap size={18} />
-            Templates
-          </button>
-          <button onClick={() => setShowImport(true)} className={`w-full flex items-center gap-3 px-4 py-2.5 font-medium mb-1 text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
-            <Upload size={18} />
-            Import Team
-          </button>
-          <button onClick={() => setShowShowdownImport(true)} className={`w-full flex items-center gap-3 px-4 py-2.5 font-medium mb-1 text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
-            <Upload size={18} />
-            Import Showdown
-          </button>
-          {teams.length > 0 && (
-            <button onClick={handleExportAll} className={`w-full flex items-center gap-3 px-4 py-2.5 font-medium mb-1 text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
-              <Download size={18} />
-              Export All
-            </button>
-          )}
-          {recentTeams.length > 0 && (
-            <>
-              <div className={`text-xs font-semibold uppercase tracking-wide mb-2 px-4 mt-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Recent</div>
-              {recentTeams.map(team => (
-                <Link key={team.id} href={`/team/${team.id}`} className={`w-full flex items-center gap-3 px-4 py-2 text-sm font-medium mb-1 text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
-                  <span className="truncate">{team.name}</span>
+
+        <nav style={{ flex: 1, padding: '1rem 0' }}>
+          {navItems.map(({ section, items }) => (
+            <div key={section} style={{ marginBottom: '1rem' }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.2em', color: 'var(--gold)', padding: '0 1.25rem', marginBottom: '0.3rem' }}>{section}</div>
+              {items.map((item) => (
+                <Link key={item.label} href={item.href} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.55rem 1.25rem', background: item.active ? 'rgba(201,168,76,0.15)' : 'transparent', borderLeft: item.active ? '3px solid var(--gold)' : '3px solid transparent', color: item.active ? 'var(--gold)' : 'var(--ink-muted)', fontSize: '0.82rem', textDecoration: 'none', transition: 'all 0.15s', fontFamily: item.active ? "'Playfair Display', serif" : 'inherit' }}>
+                  <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>{item.icon}</span>
+                  {item.label}
                 </Link>
               ))}
-            </>
-          )}
+            </div>
+          ))}
         </nav>
+
+        {recentTeams.length > 0 && (
+          <div style={{ borderTop: '1px solid rgba(201,168,76,0.2)', padding: '1rem 1.25rem' }}>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.2em', color: 'var(--gold)', marginBottom: '0.5rem' }}>RECENT</div>
+            {recentTeams.map(team => (
+              <div key={team.id} style={{ color: 'var(--ink-muted)', fontSize: '0.8rem', marginBottom: '0.3rem' }}>{team.name}</div>
+            ))}
+          </div>
+        )}
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 ml-64">
-        {/* Top Bar */}
-        <header className={`border-b h-16 flex items-center justify-between px-8 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <div className="flex items-center gap-4">
-            <h2 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>My Teams</h2>
-            <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>({filteredTeams.length})</span>
-            {selectedTeams.length > 0 && (
-              <span className="text-sm bg-blue-600 text-white px-2 py-1 font-medium">{selectedTeams.length} selected</span>
-            )}
-            {compareMode && (
-              <span className="text-sm bg-purple-600 text-white px-2 py-1 font-medium">Compare Mode ({compareTeams.length}/2)</span>
-            )}
-            <div className={`flex items-center gap-1 text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-              <Clock size={12} />
-              <span>Saved {Math.floor((new Date().getTime() - lastSaved.getTime()) / 1000)}s ago</span>
-            </div>
+      {/* Main */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <header style={{ height: '64px', background: 'var(--parchment)', borderBottom: '2px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 2rem', gap: '1rem' }}>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>My Teams</h1>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', color: 'var(--ink-muted)', letterSpacing: '0.1em', marginTop: '2px' }}>{filteredTeams.length} team{filteredTeams.length !== 1 ? 's' : ''} · Saved</p>
           </div>
-          <div className="flex items-center gap-3">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search teams..."
-              className={`px-3 py-2 border text-sm w-48 ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`}
-            />
-            <select 
-              value={filterType} 
-              onChange={(e) => setFilterType(e.target.value as any)}
-              className={`px-3 py-2 border text-sm font-medium ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-300' : 'bg-white border-gray-300 text-gray-700'}`}
-            >
+
+          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search teams..." style={{ background: 'white', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', padding: '0.45rem 0.85rem', fontFamily: "'DM Mono', monospace", fontSize: '0.78rem', color: 'var(--ink)', width: '200px', outline: 'none' }} />
+
+          <div style={{ position: 'relative' }}>
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value as any)} style={{ appearance: 'none', background: 'white', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', padding: '0.45rem 2rem 0.45rem 0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', outline: 'none', cursor: 'pointer' }}>
               <option value="all">All Teams</option>
               <option value="favorites">Favorites</option>
             </select>
-            <select 
-              value={typeFilter} 
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className={`px-3 py-2 border text-sm font-medium ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-300' : 'bg-white border-gray-300 text-gray-700'}`}
-            >
-              <option value="all">All Types</option>
-              {availableTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-            <select 
-              value={sortBy} 
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className={`px-3 py-2 border text-sm font-medium ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-300' : 'bg-white border-gray-300 text-gray-700'}`}
-            >
+            <span style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.6rem', color: 'var(--ink-muted)', pointerEvents: 'none' }}>▼</span>
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} style={{ appearance: 'none', background: 'white', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', padding: '0.45rem 2rem 0.45rem 0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', outline: 'none', cursor: 'pointer' }}>
               <option value="date">Latest</option>
               <option value="name">Name</option>
               <option value="favorite">Favorites</option>
             </select>
-            {selectedTeams.length > 0 && (
-              <>
-                <button onClick={() => { bulkFavorite(selectedTeams); setSelectedTeams([]); }} className="bg-yellow-500 text-white px-3 py-2 font-medium text-sm" title="Favorite Selected">
-                  <Star size={14} />
-                </button>
-                <button onClick={() => { const json = bulkExport(selectedTeams); const blob = new Blob([json], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `teams-${Date.now()}.json`; a.click(); }} className="bg-blue-600 text-white px-3 py-2 font-medium text-sm" title="Export Selected">
-                  <Download size={14} />
-                </button>
-                <button onClick={() => { if (confirm(`Delete ${selectedTeams.length} teams?`)) { bulkDelete(selectedTeams); setSelectedTeams([]); } }} className="bg-red-600 text-white px-3 py-2 font-medium text-sm" title="Delete Selected">
-                  <Trash2 size={14} />
-                </button>
-              </>
-            )}
-            <button onClick={() => { setCompareMode(!compareMode); setCompareTeams([]); }} className={`px-3 py-2 font-medium text-sm ${compareMode ? 'bg-purple-600 text-white' : theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`} title="Compare Teams">
-              Compare
-            </button>
-            <button onClick={toggleTheme} className={`p-2 ${theme === 'dark' ? 'bg-gray-700 text-yellow-400' : 'bg-gray-200 text-gray-700'}`} title="Toggle Theme">
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-            <button onClick={undo} className={`p-2 ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`} title="Undo (Ctrl+Z)">
-              <Undo size={16} />
-            </button>
-            <button onClick={redo} className={`p-2 ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`} title="Redo (Ctrl+Y)">
-              <Redo size={16} />
-            </button>
-            <button
-              onClick={() => setShowCommandPalette(true)}
-              className={`flex items-center gap-2 px-3 py-2 font-medium text-xs ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}
-              title="Command Palette"
-            >
-              ⌘K
-            </button>
-            <button
-              onClick={() => setShowCreate(!showCreate)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 font-medium text-sm"
-            >
-              <Plus size={16} />
-              New Team
-            </button>
+            <span style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.6rem', color: 'var(--ink-muted)', pointerEvents: 'none' }}>▼</span>
           </div>
+
+          <button onClick={() => setShowCreate(true)} style={{ background: 'var(--ink)', border: '2px solid var(--gold)', padding: '0.45rem 1.1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--gold)', cursor: 'pointer', letterSpacing: '0.1em', boxShadow: '2px 2px 0 var(--gold-dark)', transition: 'all 0.15s' }}>+ New Team</button>
         </header>
 
-        {/* Content Area */}
-        <main className="p-8">
-          {showTemplates && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowTemplates(false)}>
-              <div className={`w-full max-w-4xl border max-h-[80vh] overflow-y-auto ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`} style={{ borderRadius: '4px' }} onClick={(e) => e.stopPropagation()}>
-                <div className={`p-6 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-                  <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Start from Template</h3>
-                </div>
-                <div className="p-6 grid grid-cols-2 gap-4">
-                  {teamTemplates.map((template, i) => (
-                    <div key={i} className={`border p-4 cursor-pointer hover:border-blue-600 ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'}`} style={{ borderRadius: '4px' }} onClick={() => { createTeam(template.name, template.maxSize); setShowTemplates(false); }}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{template.name}</h4>
-                        <span className={`text-xs px-2 py-1 ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`} style={{ borderRadius: '4px' }}>{template.category}</span>
-                      </div>
-                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{template.pokemon.length} Pokemon • {template.pokemon.map(p => p.name).join(', ')}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-          {showCommandPalette && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-32 z-50" onClick={() => setShowCommandPalette(false)}>
-              <div className={`w-full max-w-2xl border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`} style={{ borderRadius: '4px' }} onClick={(e) => e.stopPropagation()}>
-                <input
-                  type="text"
-                  value={commandSearch}
-                  onChange={(e) => setCommandSearch(e.target.value)}
-                  placeholder="Type a command or search..."
-                  className={`w-full px-4 py-3 border-b text-sm ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400' : 'border-gray-200 text-gray-900'}`}
-                  autoFocus
-                />
-                <div className="max-h-96 overflow-y-auto">
-                  {filteredCommands.map((cmd, i) => (
-                    <button
-                      key={i}
-                      onClick={() => { cmd.action(); setShowCommandPalette(false); setCommandSearch(''); }}
-                      className={`w-full px-4 py-3 text-sm border-b text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 border-gray-700' : 'text-gray-700 hover:bg-gray-50 border-gray-100'}`}
-                    >
-                      {cmd.name}
-                    </button>
-                  ))}
-                  {filteredCommands.length === 0 && (
-                    <div className={`px-4 py-8 text-center text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>No commands found</div>
+        <main style={{ flex: 1, padding: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem', alignContent: 'start' }}>
+          {filteredTeams.map((team) => {
+            const totalStats = team.pokemon.reduce((sum, p) => sum + Object.values(p.stats).reduce((a, b) => a + b, 0), 0);
+            const avgStat = team.pokemon.length > 0 ? Math.round(totalStats / team.pokemon.length) : 0;
+            const validation = getFormatBadge(team);
+            const coverage = getTeamCoverage(team);
+
+            return (
+              <div key={team.id} style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--gold)', boxShadow: '4px 4px 0 var(--border)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <input type="checkbox" checked={selectedTeams.includes(team.id)} onChange={() => setSelectedTeams(prev => prev.includes(team.id) ? prev.filter(id => id !== team.id) : [...prev, team.id])} style={{ accentColor: 'var(--gold)', width: '14px', height: '14px' }} />
+                  {editingTeamId === team.id ? (
+                    <>
+                      <input type="text" value={editingName} onChange={(e) => setEditingName(e.target.value)} style={{ flex: 1, border: '1px solid var(--gold)', padding: '0.25rem 0.5rem', fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700 }} autoFocus />
+                      <button onClick={() => handleRename(team.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}>✓</button>
+                      <button onClick={() => setEditingTeamId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: 'var(--ink)', flex: 1 }}>{team.name}</span>
+                      <button onClick={() => { setEditingTeamId(team.id); setEditingName(team.name); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem' }}>✏</button>
+                    </>
                   )}
+                  <button onClick={() => toggleFavorite(team.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: team.favorite ? 'var(--gold)' : 'var(--border)' }}>★</button>
                 </div>
-              </div>
-            </div>
-          )}
-          {showImport && (
-            <div className={`p-6 border mb-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`} style={{ borderRadius: '4px' }}>
-              <h3 className={`text-base font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Import Team (JSON)</h3>
-              <div className="space-y-4">
-                <textarea
-                  value={importData}
-                  onChange={(e) => setImportData(e.target.value)}
-                  placeholder="Paste your team JSON here..."
-                  className={`w-full px-3 py-2 border h-32 ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300 text-gray-900'}`}
-                  style={{ borderRadius: '4px' }}
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleImport}
-                    className="bg-blue-900 text-white px-4 py-2 font-medium text-sm"
-                    style={{ borderRadius: '4px' }}
-                  >
-                    Import
-                  </button>
-                  <button
-                    onClick={() => setShowImport(false)}
-                    className={`px-4 py-2 font-medium text-sm ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}
-                    style={{ borderRadius: '4px' }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {showShowdownImport && (
-            <div className={`p-6 border mb-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`} style={{ borderRadius: '4px' }}>
-              <h3 className={`text-base font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Import from Showdown</h3>
-              <div className="space-y-4">
-                <textarea
-                  value={showdownData}
-                  onChange={(e) => setShowdownData(e.target.value)}
-                  placeholder="Paste Showdown format here...\n\nPikachu @ Light Ball\nAbility: Static\nAdamant Nature\n- Thunderbolt\n- Iron Tail"
-                  className={`w-full px-3 py-2 border h-32 ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300 text-gray-900'}`}
-                  style={{ borderRadius: '4px' }}
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleShowdownImport}
-                    className="bg-blue-900 text-white px-4 py-2 font-medium text-sm"
-                    style={{ borderRadius: '4px' }}
-                  >
-                    Import
-                  </button>
-                  <button
-                    onClick={() => setShowShowdownImport(false)}
-                    className={`px-4 py-2 font-medium text-sm ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}
-                    style={{ borderRadius: '4px' }}
-                  >
-                    Cancel
-                  </button>
+                <div style={{ padding: '0.6rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border)' }}>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: 'var(--ink-muted)' }}>{team.pokemon.length}/6 Pokémon</span>
+                  {avgStat > 0 && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.65rem', color: 'var(--gold)', border: '1px solid var(--gold)', padding: '1px 6px', letterSpacing: '0.05em' }}>⚡ {avgStat}</span>}
+                  {validation && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.65rem', color: 'var(--green)', border: '1px solid var(--green)', padding: '1px 6px' }}>✓ {validation.format}</span>}
                 </div>
-              </div>
-            </div>
-          )}
 
-          {showCreate && (
-            <div className={`p-6 border mb-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`} style={{ borderRadius: '4px' }}>
-              <h3 className={`text-base font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Create New Team</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Team Name</label>
-                  <input
-                    type="text"
-                    value={teamName}
-                    onChange={(e) => setTeamName(e.target.value)}
-                    placeholder="Enter team name..."
-                    className={`w-full px-3 py-2 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300 text-gray-900'}`}
-                    style={{ borderRadius: '4px' }}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Team Size (1-6)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="6"
-                    value={teamSize}
-                    onChange={(e) => setTeamSize(Number(e.target.value))}
-                    className={`w-full px-3 py-2 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300 text-gray-900'}`}
-                    style={{ borderRadius: '4px' }}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleCreate}
-                    className="bg-blue-900 text-white px-4 py-2 font-medium text-sm"
-                    style={{ borderRadius: '4px' }}
-                  >
-                    Create
-                  </button>
-                  <button
-                    onClick={() => setShowCreate(false)}
-                    className={`px-4 py-2 font-medium text-sm ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}
-                    style={{ borderRadius: '4px' }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTeams.map((team) => {
-              const totalStats = team.pokemon.reduce((sum, p) => 
-                sum + Object.values(p.stats).reduce((a, b) => a + b, 0), 0
-              );
-              const avgStat = team.pokemon.length > 0 ? Math.round(totalStats / team.pokemon.length) : 0;
-              const validation = getFormatBadge(team);
-              const coverage = getTeamCoverage(team);
-              const isCompareSelected = compareTeams.includes(team.id);
-              
-              return (
-              <div 
-                key={team.id} 
-                className={`border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} ${hoveredTeam === team.id ? 'ring-2 ring-blue-500' : ''} ${isCompareSelected ? 'ring-2 ring-purple-500' : ''}`} 
-                onMouseEnter={() => setHoveredTeam(team.id)}
-                onMouseLeave={() => setHoveredTeam(null)}
-                onClick={() => {
-                  if (compareMode) {
-                    if (isCompareSelected) {
-                      setCompareTeams(compareTeams.filter(id => id !== team.id));
-                    } else if (compareTeams.length < 2) {
-                      setCompareTeams([...compareTeams, team.id]);
-                    }
-                  }
-                }}
-              >
-                <div className={`p-5 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2 flex-1">
-                      <button onClick={() => setSelectedTeams(prev => prev.includes(team.id) ? prev.filter(id => id !== team.id) : [...prev, team.id])} className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {selectedTeams.includes(team.id) ? <CheckSquare size={18} /> : <Square size={18} />}
-                      </button>
-                    {editingTeamId === team.id ? (
-                      <div className="flex items-center gap-2 flex-1">
-                        <input
-                          type="text"
-                          value={editingName}
-                          onChange={(e) => setEditingName(e.target.value)}
-                          className={`flex-1 px-2 py-1 border-2 border-blue-600 font-semibold ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}`}
-                          autoFocus
-                        />
-                        <button onClick={() => handleRename(team.id)} className="text-green-600">
-                          <Save size={16} />
-                        </button>
-                        <button onClick={() => setEditingTeamId(null)} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
-                          <XIcon size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 flex-1">
-                        <h3 className={`text-base font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{team.name}</h3>
-                        <button
-                          onClick={() => {
-                            setEditingTeamId(team.id);
-                            setEditingName(team.name);
-                          }}
-                          className={`${theme === 'dark' ? 'text-gray-500 hover:text-blue-400' : 'text-gray-400 hover:text-blue-600'}`}
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                    </div>
-                    <button
-                      onClick={() => toggleFavorite(team.id)}
-                      className="text-yellow-500"
-                    >
-                      <Star size={16} fill={team.favorite ? 'currentColor' : 'none'} />
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {team.pokemon.length}/{team.maxSize} Pokemon
-                    </p>
-                    {avgStat > 0 && (
-                      <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5">⚡ {avgStat}</span>
-                    )}
-                    {validation && (
-                      <span className={`text-xs px-2 py-0.5 flex items-center gap-1 ${validation.valid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`} title={validation.valid ? `Valid ${validation.format}` : 'Invalid'}>
-                        {validation.valid ? <CheckCircle size={10} /> : <AlertCircle size={10} />}
-                        {validation.format}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                
                 {team.pokemon.length > 0 && (
-                  <div className={`px-5 py-3 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Offensive</span>
-                      <span className={`font-medium ${coverage.offensive > 50 ? 'text-green-600' : 'text-yellow-600'}`}>{coverage.offensive}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 h-1.5">
-                      <div className="bg-green-500 h-1.5" style={{ width: `${coverage.offensive}%` }} />
-                    </div>
-                    <div className="flex items-center justify-between text-xs mb-1 mt-2">
-                      <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Defensive</span>
-                      <span className={`font-medium ${coverage.defensive > 50 ? 'text-green-600' : 'text-red-600'}`}>{coverage.defensive}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 h-1.5">
-                      <div className="bg-blue-500 h-1.5" style={{ width: `${coverage.defensive}%` }} />
-                    </div>
-                  </div>
-                )}
-                
-                <div className="p-5">
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    {Array.from({ length: team.maxSize }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`aspect-square border flex items-center justify-center relative group ${theme === 'dark' ? 'border-gray-700 bg-gray-700' : 'border-gray-300 bg-gray-50'}`}
-                      >
-                        {team.pokemon[i] ? (
-                          <>
-                            <img
-                              src={team.pokemon[i].sprite}
-                              alt={team.pokemon[i].name}
-                              className="w-full h-full object-contain"
-                            />
-                            <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'} bg-opacity-95 p-2`}>
-                              <div className="text-xs">
-                                <p className={`font-semibold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{team.pokemon[i].nickname || team.pokemon[i].name}</p>
-                                {team.pokemon[i].selectedAbility && (
-                                  <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{team.pokemon[i].selectedAbility}</p>
-                                )}
-                                <div className="flex gap-1 mt-1">
-                                  {team.pokemon[i].types.map(t => (
-                                    <span key={t} className="text-xs px-1 py-0.5 bg-gray-200 text-gray-700">{t}</span>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <span className={`text-xl ${theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}`}>+</span>
-                        )}
+                  <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {[{ label: 'Offensive', value: coverage.offensive, color: 'var(--red)' }, { label: 'Defensive', value: coverage.defensive, color: '#3A6EA5' }].map(({ label, value, color }) => (
+                      <div key={label}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.65rem', color: 'var(--ink-muted)', letterSpacing: '0.05em' }}>{label}</span>
+                          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.65rem', color }}>{value}%</span>
+                        </div>
+                        <div style={{ height: '5px', background: 'var(--border)', position: 'relative' }}>
+                          <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${value}%`, background: color, transition: 'width 0.6s ease-out' }} />
+                        </div>
                       </div>
                     ))}
                   </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'var(--border)' }}>
+                  {Array.from({ length: team.maxSize }).map((_, i) => (
+                    <div key={i} style={{ background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem', aspectRatio: '1' }}>
+                      {team.pokemon[i] ? <img src={team.pokemon[i].sprite} alt={team.pokemon[i].name} style={{ width: '64px', height: '64px', imageRendering: 'pixelated', objectFit: 'contain' }} /> : <span style={{ fontSize: '1.5rem', color: 'var(--border)' }}>+</span>}
+                    </div>
+                  ))}
                 </div>
 
-                <div className={`p-5 border-t flex gap-2 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-                  <Link
-                    href={`/team/${team.id}`}
-                    className="flex-1 bg-blue-600 text-white text-center py-2 font-medium text-sm"
-                  >
-                    Edit
-                  </Link>
-                  <Link
-                    href={`/battle/${team.id}`}
-                    className={`px-4 py-2 font-medium text-sm ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}
-                  >
-                    Battle
-                  </Link>
-                  <div className="relative">
-                    <button
-                      onClick={() => setOpenDropdown(openDropdown === team.id ? null : team.id)}
-                      className={`p-2 ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}
-                    >
-                      <MoreVertical size={16} />
-                    </button>
-                    {openDropdown === team.id && (
-                      <div className={`absolute right-0 bottom-full mb-1 border shadow-lg w-48 z-10 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                        <Link
-                          href={`/analytics/${team.id}`}
-                          className={`flex items-center gap-2 px-4 py-2 text-sm border-b ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 border-gray-700' : 'text-gray-700 hover:bg-gray-50 border-gray-100'}`}
-                        >
-                          <BarChart3 size={14} />
-                          Analytics
-                        </Link>
-                        <Link
-                          href={`/formats/${team.id}`}
-                          className={`flex items-center gap-2 px-4 py-2 text-sm border-b ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 border-gray-700' : 'text-gray-700 hover:bg-gray-50 border-gray-100'}`}
-                        >
-                          <CheckCircle size={14} />
-                          Validate
-                        </Link>
-                        <Link
-                          href={`/share/${team.id}`}
-                          className={`flex items-center gap-2 px-4 py-2 text-sm border-b ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 border-gray-700' : 'text-gray-700 hover:bg-gray-50 border-gray-100'}`}
-                        >
-                          <Share2 size={14} />
-                          Share
-                        </Link>
-                        <button
-                          onClick={() => { handleExport(team.id); setOpenDropdown(null); }}
-                          className={`w-full flex items-center gap-2 px-4 py-2 text-sm border-b text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 border-gray-700' : 'text-gray-700 hover:bg-gray-50 border-gray-100'}`}
-                        >
-                          <Download size={14} />
-                          Export JSON
-                        </button>
-                        <button
-                          onClick={() => { 
-                            const text = exportShowdown(team.id);
-                            navigator.clipboard.writeText(text);
-                            setOpenDropdown(null);
-                          }}
-                          className={`w-full flex items-center gap-2 px-4 py-2 text-sm border-b text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 border-gray-700' : 'text-gray-700 hover:bg-gray-50 border-gray-100'}`}
-                        >
-                          <Copy size={14} />
-                          Copy Showdown
-                        </button>
-                        <button
-                          onClick={() => { exportTeamImage(team.id); setOpenDropdown(null); }}
-                          className={`w-full flex items-center gap-2 px-4 py-2 text-sm border-b text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 border-gray-700' : 'text-gray-700 hover:bg-gray-50 border-gray-100'}`}
-                        >
-                          <ImageIcon size={14} />
-                          Export Image
-                        </button>
-                        <button
-                          onClick={() => { duplicateTeam(team.id); setOpenDropdown(null); }}
-                          className={`w-full flex items-center gap-2 px-4 py-2 text-sm border-b text-left ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 border-gray-700' : 'text-gray-700 hover:bg-gray-50 border-gray-100'}`}
-                        >
-                          <Copy size={14} />
-                          Duplicate
-                        </button>
-                        <button
-                          onClick={() => { handleDelete(team.id); setOpenDropdown(null); }}
-                          className={`w-full flex items-center gap-2 px-4 py-2 text-sm text-left ${
-                            deleteConfirm === team.id ? 'text-red-600 font-medium' : theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                          } ${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
-                        >
-                          <Trash2 size={14} />
-                          {deleteConfirm === team.id ? 'Confirm Delete' : 'Delete'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                <div style={{ padding: '0.85rem 1.25rem', display: 'flex', gap: '0.6rem' }}>
+                  <Link href={`/team/${team.id}`} style={{ flex: 1, background: 'var(--ink)', border: '2px solid var(--gold)', color: 'var(--gold)', padding: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer', boxShadow: '2px 2px 0 var(--gold-dark)', textAlign: 'center', textDecoration: 'none', display: 'block' }}>EDIT</Link>
+                  <Link href={`/battle/${team.id}`} style={{ flex: 1, background: 'white', border: '1px solid var(--border)', color: 'var(--ink)', padding: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', display: 'block' }}>BATTLE</Link>
+                  <button onClick={() => setOpenDropdown(openDropdown === team.id ? null : team.id)} style={{ background: 'white', border: '1px solid var(--border)', color: 'var(--ink-muted)', padding: '0.5rem 0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', cursor: 'pointer' }}>···</button>
                 </div>
               </div>
-            )
-            })}
-          </div>
+            );
+          })}
 
-          {teams.length === 0 && !showCreate && (
-            <div className="text-center py-16">
-              <p className={`mb-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>No teams yet. Create your first team!</p>
-              <button
-                onClick={() => setShowCreate(true)}
-                className="bg-blue-900 text-white px-6 py-3 font-medium"
-                style={{ borderRadius: '4px' }}
-              >
-                Get Started
-              </button>
-            </div>
-          )}
-
-          {compareTeams.length === 2 && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => { setCompareTeams([]); setCompareMode(false); }}>
-              <div className={`w-full max-w-6xl border max-h-[80vh] overflow-y-auto ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`} style={{ borderRadius: '4px' }} onClick={(e) => e.stopPropagation()}>
-                <div className={`p-6 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-                  <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Team Comparison</h3>
-                </div>
-                <div className="p-6 grid grid-cols-2 gap-6">
-                  {compareTeams.map(teamId => {
-                    const team = teams.find(t => t.id === teamId);
-                    if (!team) return null;
-                    const coverage = getTeamCoverage(team);
-                    const avgStat = team.pokemon.length > 0 ? Math.round(team.pokemon.reduce((sum, p) => sum + Object.values(p.stats).reduce((a, b) => a + b, 0), 0) / team.pokemon.length) : 0;
-                    return (
-                      <div key={teamId} className={`border p-4 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`} style={{ borderRadius: '4px' }}>
-                        <h4 className={`font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{team.name}</h4>
-                        <div className="space-y-3">
-                          <div>
-                            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Avg Stats: {avgStat}</p>
-                          </div>
-                          <div>
-                            <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Offensive: {coverage.offensive}%</p>
-                            <div className="w-full bg-gray-200 h-2" style={{ borderRadius: '2px' }}>
-                              <div className="bg-green-500 h-2" style={{ width: `${coverage.offensive}%`, borderRadius: '2px' }} />
-                            </div>
-                          </div>
-                          <div>
-                            <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Defensive: {coverage.defensive}%</p>
-                            <div className="w-full bg-gray-200 h-2" style={{ borderRadius: '2px' }}>
-                              <div className="bg-blue-500 h-2" style={{ width: `${coverage.defensive}%`, borderRadius: '2px' }} />
-                            </div>
-                          </div>
-                          <div>
-                            <p className={`text-sm mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Pokemon:</p>
-                            <div className="grid grid-cols-3 gap-2">
-                              {team.pokemon.map(p => (
-                                <img key={p.position} src={p.sprite} alt={p.name} className="w-full" />
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {teams.length > 0 && (
-            <div className="mt-8 text-center">
-              <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                <kbd className={`px-2 py-1 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'}`} style={{ borderRadius: '4px' }}>Ctrl+K</kbd> Command Palette • 
-                <kbd className={`px-2 py-1 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'}`} style={{ borderRadius: '4px' }}>Ctrl+N</kbd> New Team • 
-                <kbd className={`px-2 py-1 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'}`} style={{ borderRadius: '4px' }}>Ctrl+Z</kbd> Undo • 
-                <kbd className={`px-2 py-1 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'}`} style={{ borderRadius: '4px' }}>↑↓</kbd> Navigate • 
-                <kbd className={`px-2 py-1 border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'}`} style={{ borderRadius: '4px' }}>Enter</kbd> Open
-              </p>
-            </div>
+          {teams.length === 0 && (
+            <button onClick={() => setShowCreate(true)} style={{ border: '2px dashed var(--border)', background: 'transparent', padding: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--ink-muted)' }}>
+              <span style={{ fontSize: '2rem', lineHeight: 1 }}>+</span>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.12em' }}>NEW TEAM</span>
+            </button>
           )}
         </main>
+
+        {showCreate && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }} onClick={() => setShowCreate(false)}>
+            <div style={{ background: 'var(--parchment)', border: '2px solid var(--gold)', padding: '2rem', width: '400px', boxShadow: '8px 8px 0 var(--border)' }} onClick={(e) => e.stopPropagation()}>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', fontWeight: 700, marginBottom: '1.5rem' }}>Create New Team</h2>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', marginBottom: '0.5rem', color: 'var(--ink-muted)' }}>TEAM NAME</label>
+                <input type="text" value={teamName} onChange={(e) => setTeamName(e.target.value)} style={{ width: '100%', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', padding: '0.5rem', fontFamily: "'DM Mono', monospace" }} />
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', marginBottom: '0.5rem', color: 'var(--ink-muted)' }}>TEAM SIZE (1-6)</label>
+                <input type="number" min="1" max="6" value={teamSize} onChange={(e) => setTeamSize(Number(e.target.value))} style={{ width: '100%', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', padding: '0.5rem', fontFamily: "'DM Mono', monospace" }} />
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button onClick={handleCreate} style={{ flex: 1, background: 'var(--ink)', border: '2px solid var(--gold)', color: 'var(--gold)', padding: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer', boxShadow: '2px 2px 0 var(--gold-dark)' }}>CREATE</button>
+                <button onClick={() => setShowCreate(false)} style={{ flex: 1, background: 'white', border: '1px solid var(--border)', color: 'var(--ink)', padding: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer' }}>CANCEL</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
