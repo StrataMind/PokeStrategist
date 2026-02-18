@@ -18,9 +18,28 @@ export default function Home() {
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [commandSearch, setCommandSearch] = useState('');
 
   useEffect(() => {
     loadTeams();
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowCommandPalette(true);
+      }
+      if (e.key === 'Escape') {
+        setShowCommandPalette(false);
+        setOpenDropdown(null);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        setShowCreate(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [loadTeams]);
 
   const handleCreate = () => {
@@ -84,6 +103,21 @@ export default function Home() {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
+  const commands = [
+    { name: 'Create New Team', action: () => setShowCreate(true) },
+    { name: 'Import Team', action: () => setShowImport(true) },
+    { name: 'Damage Calculator', action: () => window.location.href = '/calculator' },
+    { name: 'EV/IV Calculator', action: () => window.location.href = '/ev-iv' },
+    ...sortedTeams.map(team => ({
+      name: `Open ${team.name}`,
+      action: () => window.location.href = `/team/${team.id}`
+    }))
+  ];
+
+  const filteredCommands = commands.filter(cmd => 
+    cmd.name.toLowerCase().includes(commandSearch.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
@@ -145,6 +179,14 @@ export default function Home() {
               <option value="favorite">Favorites</option>
             </select>
             <button
+              onClick={() => setShowCommandPalette(true)}
+              className="flex items-center gap-2 bg-gray-200 text-gray-700 px-3 py-2 font-medium text-xs"
+              style={{ borderRadius: '4px' }}
+              title="Command Palette"
+            >
+              ⌘K
+            </button>
+            <button
               onClick={() => setShowCreate(!showCreate)}
               className="flex items-center gap-2 bg-blue-900 text-white px-4 py-2 font-medium text-sm"
               style={{ borderRadius: '4px' }}
@@ -157,6 +199,34 @@ export default function Home() {
 
         {/* Content Area */}
         <main className="p-8">
+          {showCommandPalette && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-32 z-50" onClick={() => setShowCommandPalette(false)}>
+              <div className="bg-white w-full max-w-2xl border border-gray-200" style={{ borderRadius: '4px' }} onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="text"
+                  value={commandSearch}
+                  onChange={(e) => setCommandSearch(e.target.value)}
+                  placeholder="Type a command or search..."
+                  className="w-full px-4 py-3 border-b border-gray-200 text-sm"
+                  autoFocus
+                />
+                <div className="max-h-96 overflow-y-auto">
+                  {filteredCommands.map((cmd, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { cmd.action(); setShowCommandPalette(false); setCommandSearch(''); }}
+                      className="w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 text-left"
+                    >
+                      {cmd.name}
+                    </button>
+                  ))}
+                  {filteredCommands.length === 0 && (
+                    <div className="px-4 py-8 text-center text-gray-500 text-sm">No commands found</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           {showImport && (
             <div className="bg-white p-6 border border-gray-200 mb-6" style={{ borderRadius: '4px' }}>
               <h3 className="text-base font-semibold text-gray-900 mb-4">Import Team</h3>
@@ -404,6 +474,15 @@ export default function Home() {
               >
                 Get Started
               </button>
+            </div>
+          )}
+
+          {teams.length > 0 && (
+            <div className="mt-8 text-center">
+              <p className="text-xs text-gray-500">
+                <kbd className="px-2 py-1 bg-gray-100 border border-gray-300" style={{ borderRadius: '4px' }}>Ctrl+K</kbd> Command Palette • 
+                <kbd className="px-2 py-1 bg-gray-100 border border-gray-300" style={{ borderRadius: '4px' }}>Ctrl+N</kbd> New Team
+              </p>
             </div>
           )}
         </main>
