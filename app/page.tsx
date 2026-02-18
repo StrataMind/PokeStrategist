@@ -272,11 +272,22 @@ export default function Home() {
                   ))}
                 </div>
 
-                <div style={{ padding: '0.85rem 1.25rem', display: 'flex', gap: '0.6rem' }}>
+                <div style={{ padding: '0.85rem 1.25rem', display: 'flex', gap: '0.6rem', position: 'relative' }}>
                   <Link href={`/team/${team.id}`} style={{ flex: 1, background: 'var(--ink)', border: '2px solid var(--gold)', color: 'var(--gold)', padding: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer', boxShadow: '2px 2px 0 var(--gold-dark)', textAlign: 'center', textDecoration: 'none', display: 'block' }}>EDIT</Link>
                   <Link href={`/battle/${team.id}`} style={{ flex: 1, background: 'white', border: '1px solid var(--border)', color: 'var(--ink)', padding: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', display: 'block' }}>BATTLE</Link>
                   <button onClick={() => exportTeamAsImage(team)} style={{ background: 'white', border: '1px solid var(--border)', color: 'var(--ink-muted)', padding: '0.5rem 0.75rem', cursor: 'pointer' }} title="Export as Image">🖼</button>
-                  <button onClick={() => setOpenDropdown(openDropdown === team.id ? null : team.id)} style={{ background: 'white', border: '1px solid var(--border)', color: 'var(--ink-muted)', padding: '0.5rem 0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', cursor: 'pointer' }}>···</button>
+                  <div style={{ position: 'relative' }}>
+                    <button onClick={() => setOpenDropdown(openDropdown === team.id ? null : team.id)} style={{ background: 'white', border: '1px solid var(--border)', color: 'var(--ink-muted)', padding: '0.5rem 0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', cursor: 'pointer' }}>···</button>
+                    {openDropdown === team.id && (
+                      <div style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: '0.5rem', background: 'var(--parchment)', border: '2px solid var(--gold)', boxShadow: '4px 4px 0 var(--border)', minWidth: '180px', zIndex: 10 }}>
+                        <Link href={`/analytics/${team.id}`} style={{ display: 'block', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', textDecoration: 'none', cursor: 'pointer' }} onClick={() => setOpenDropdown(null)}>📊 Analytics</Link>
+                        <Link href={`/share/${team.id}`} style={{ display: 'block', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', textDecoration: 'none', cursor: 'pointer' }} onClick={() => setOpenDropdown(null)}>🔗 Share</Link>
+                        <button onClick={() => { duplicateTeam(team.id); setOpenDropdown(null); }} style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', background: 'none', border: 'none', cursor: 'pointer' }}>📋 Duplicate</button>
+                        <button onClick={() => { const data = exportTeam(team.id); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${team.name}.json`; a.click(); setOpenDropdown(null); }} style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', background: 'none', border: 'none', cursor: 'pointer' }}>↓ Export JSON</button>
+                        <button onClick={() => { handleDelete(team.id); setOpenDropdown(null); }} style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer' }}>🗑 {deleteConfirm === team.id ? 'Confirm?' : 'Delete'}</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
