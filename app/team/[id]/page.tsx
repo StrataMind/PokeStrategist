@@ -411,18 +411,21 @@ export default function TeamEditor() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Moves (Select up to 4) - {selectedMoves.length}/4</label>
                   <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-lg p-2">
-                    {editingPokemon.moves?.slice(0, 30).map(move => (
-                      <label key={move.name} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="rounded" 
-                          checked={selectedMoves.includes(move.name)}
-                          onChange={() => handleMoveToggle(move.name)}
-                          disabled={!selectedMoves.includes(move.name) && selectedMoves.length >= 4}
-                        />
-                        <span className="text-sm capitalize">{move.name.replace('-', ' ')}</span>
-                      </label>
-                    ))}
+                    {editingPokemon.moves?.slice(0, 30).map(move => {
+                      const moveName = typeof move === 'string' ? move : move.name;
+                      return (
+                        <label key={moveName} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="rounded" 
+                            checked={selectedMoves.includes(moveName)}
+                            onChange={() => handleMoveToggle(moveName)}
+                            disabled={!selectedMoves.includes(moveName) && selectedMoves.length >= 4}
+                          />
+                          <span className="text-sm capitalize">{moveName.replace('-', ' ')}</span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
 
