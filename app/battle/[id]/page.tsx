@@ -13,6 +13,7 @@ export default function BattleSimulator() {
   const router = useRouter();
   const { teams } = useTeamStore();
   const [team, setTeam] = useState(teams.find(t => t.id === params.id));
+  const [opponentTeam, setOpponentTeam] = useState<typeof team | null>(null);
   const [selectedPokemon, setSelectedPokemon] = useState<TeamPokemon | null>(null);
   const [opponentPokemon, setOpponentPokemon] = useState<TeamPokemon | null>(null);
   const [playerHP, setPlayerHP] = useState(100);
@@ -22,6 +23,10 @@ export default function BattleSimulator() {
   const [opponentStatus, setOpponentStatus] = useState<string>('');
   const [weather, setWeather] = useState<string>('');
   const [turn, setTurn] = useState(1);
+  const [playerFainted, setPlayerFainted] = useState<number[]>([]);
+  const [opponentFainted, setOpponentFainted] = useState<number[]>([]);
+  const [battleStarted, setBattleStarted] = useState(false);
+  const [winner, setWinner] = useState<string>('');
 
   useEffect(() => {
     const currentTeam = teams.find(t => t.id === params.id);
@@ -33,16 +38,32 @@ export default function BattleSimulator() {
   }, [teams, params.id, router]);
 
   const selectOpponent = () => {
-    if (team && team.pokemon.length > 0) {
-      const randomIndex = Math.floor(Math.random() * team.pokemon.length);
-      setOpponentPokemon(team.pokemon[randomIndex]);
-      setOpponentHP(100);
-      setOpponentStatus('');
-      setPlayerStatus('');
-      setWeather('');
-      setTurn(1);
-      setLog([`Wild ${team.pokemon[randomIndex].name} appeared!`]);
+    if (!team) return;
+    
+    // Select random opponent team with same size
+    const eligibleTeams = teams.filter(t => t.id !== team.id && t.pokemon.length === team.pokemon.length && t.pokemon.length > 0);
+    if (eligibleTeams.length === 0) {
+      setLog(['No eligible opponent teams found! Need teams with same number of Pokemon.']);
+      return;
     }
+    
+    const randomTeam = eligibleTeams[Math.floor(Math.random() * eligibleTeams.length)];
+    setOpponentTeam(randomTeam);
+    
+    // Auto-select first Pokemon for both teams
+    setSelectedPokemon(team.pokemon[0]);
+    setOpponentPokemon(randomTeam.pokemon[0]);
+    setPlayerHP(100);
+    setOpponentHP(100);
+    setOpponentStatus('');
+    setPlayerStatus('');
+    setWeather('');
+    setTurn(1);
+    setPlayerFainted([]);
+    setOpponentFainted([]);
+    setBattleStarted(true);
+    setWinner('');
+    setLog([`Battle started! ${team.name} vs ${randomTeam.name}!`, `Go ${team.pokemon[0].name}!`, `${randomTeam.name} sent out ${randomTeam.pokemon[0].name}!`]);
   };
 
   const calculateDamage = (attacker: TeamPokemon, defender: TeamPokemon) => {
@@ -170,14 +191,42 @@ export default function BattleSimulator() {
 
         if (newPlayerHP === 0) {
           setLog(prev => [...prev, `${selectedPokemon.name} fainted!`]);
+          const newFainted = [...playerFainted, selectedPokemon.position];
+          setPlayerFainted(newFainted);
+          
+          // Check if player has remaining Pokemon
+          const remainingPlayer = team?.pokemon.filter(p => !newFainted.includes(p.position)) || [];
+          if (remainingPlayer.length === 0) {
+            setWinner(opponentTeam?.name || 'Opponent');
+            setLog(prev => [...prev, `${opponentTeam?.name || 'Opponent'} wins the battle!`]);
+          } else {
+            setLog(prev => [...prev, 'Choose your next Pokemon!']);
+          }
         }
       }, 1000);
     } else {
-      setLog(prev => [...prev, `${opponentPokemon.name} fainted! You win!`]);
+      setLog(prev => [...prev, `${opponentPokemon.name} fainted!`]);
+      const newFainted = [...opponentFainted, opponentPokemon.position];
+      setOpponentFainted(newFainted);
+      
+      // Check if opponent has remaining Pokemon
+      const remainingOpponent = opponentTeam?.pokemon.filter(p => !newFainted.includes(p.position)) || [];
+      if (remainingOpponent.length === 0) {
+        setWinner(team?.name || 'You');
+        setLog(prev => [...prev, `${team?.name || 'You'} win the battle!`]);
+      } else {
+        // Auto-switch to next opponent Pokemon
+        const nextOpponent = remainingOpponent[0];
+        setOpponentPokemon(nextOpponent);
+        setOpponentHP(100);
+        setOpponentStatus('');
+        setLog(prev => [...prev, `${opponentTeam?.name} sent out ${nextOpponent.name}!`]);
+      }
     }
   };
 
   const switchPokemon = (pokemon: TeamPokemon) => {
+    if (playerFainted.includes(pokemon.position)) return;
     setSelectedPokemon(pokemon);
     setPlayerHP(100);
     setPlayerStatus('');
@@ -199,6 +248,40 @@ export default function BattleSimulator() {
       </header>
 
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+        {!battleStarted ? (
+          <div style={{ background: 'var(--parchment)', border: '2px solid var(--gold)', padding: '3rem', textAlign: 'center', boxShadow: '8px 8px 0 var(--border)' }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, marginBottom: '1rem' }}>Start Battle</h2>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', color: 'var(--ink-muted)', marginBottom: '2rem' }}>Battle against another team with the same number of Pokémon</p>
+            <button
+              onClick={selectOpponent}
+              style={{ background: 'var(--ink)', border: '2px solid var(--gold)', color: 'var(--gold)', padding: '1rem 2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', letterSpacing: '0.1em', cursor: 'pointer', boxShadow: '4px 4px 0 var(--gold-dark)' }}
+            >
+              FIND OPPONENT TEAM
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
+                {team?.name}: {team ? team.pokemon.length - playerFainted.length : 0}/{team?.pokemon.length} remaining
+              </div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
+                {opponentTeam?.name}: {opponentTeam ? opponentTeam.pokemon.length - opponentFainted.length : 0}/{opponentTeam?.pokemon.length} remaining
+              </div>
+            </div>
+
+            {winner && (
+              <div style={{ background: 'var(--parchment)', border: '2px solid var(--gold)', padding: '2rem', textAlign: 'center', marginBottom: '2rem', boxShadow: '8px 8px 0 var(--border)' }}>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2rem', fontWeight: 700, color: 'var(--gold)' }}>🏆 {winner} WINS! 🏆</h2>
+                <button
+                  onClick={selectOpponent}
+                  style={{ marginTop: '1rem', background: 'var(--ink)', border: '2px solid var(--gold)', color: 'var(--gold)', padding: '0.75rem 1.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', cursor: 'pointer', boxShadow: '2px 2px 0 var(--gold-dark)' }}
+                >
+                  NEW BATTLE
+                </button>
+              </div>
+            )}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
           <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--gold)', padding: '2rem', boxShadow: '4px 4px 0 var(--border)' }}>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, color: 'var(--ink)', marginBottom: '1.5rem' }}>Your Pokémon</h2>
@@ -330,19 +413,43 @@ export default function BattleSimulator() {
         <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--gold)', padding: '2rem', boxShadow: '4px 4px 0 var(--border)' }}>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.5rem' }}>Your Team</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
-            {team.pokemon.map((pokemon, i) => (
+            {team?.pokemon.map((pokemon, i) => (
               <button
                 key={i}
                 onClick={() => switchPokemon(pokemon)}
-                style={{ background: selectedPokemon?.position === pokemon.position ? 'rgba(201,168,76,0.1)' : 'white', border: selectedPokemon?.position === pokemon.position ? '2px solid var(--gold)' : '1px solid var(--border)', padding: '1rem', cursor: 'pointer', transition: 'all 0.15s' }}
+                disabled={playerFainted.includes(pokemon.position)}
+                style={{ background: selectedPokemon?.position === pokemon.position ? 'rgba(201,168,76,0.1)' : 'white', border: selectedPokemon?.position === pokemon.position ? '2px solid var(--gold)' : '1px solid var(--border)', padding: '1rem', cursor: playerFainted.includes(pokemon.position) ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: playerFainted.includes(pokemon.position) ? 0.3 : 1 }}
               >
-                <img src={pokemon.sprite} alt={pokemon.name} style={{ width: '100%', height: '80px', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                <img src={pokemon.sprite} alt={pokemon.name} style={{ width: '100%', height: '80px', objectFit: 'contain', imageRendering: 'pixelated', filter: playerFainted.includes(pokemon.position) ? 'grayscale(1)' : 'none' }} />
                 <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.85rem', fontWeight: 700, textAlign: 'center', marginTop: '0.5rem', textTransform: 'capitalize' }}>{pokemon.nickname || pokemon.name}</h3>
+                {playerFainted.includes(pokemon.position) && (
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.65rem', color: 'var(--red)', textAlign: 'center', marginTop: '0.25rem' }}>FAINTED</div>
+                )}
               </button>
             ))}
           </div>
         </div>
+
+        <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--red)', padding: '2rem', boxShadow: '4px 4px 0 var(--border)' }}>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--red)' }}>Opponent Team</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
+            {opponentTeam?.pokemon.map((pokemon, i) => (
+              <div
+                key={i}
+                style={{ background: opponentPokemon?.position === pokemon.position ? 'rgba(139,38,53,0.1)' : 'white', border: opponentPokemon?.position === pokemon.position ? '2px solid var(--red)' : '1px solid var(--border)', padding: '1rem', opacity: opponentFainted.includes(pokemon.position) ? 0.3 : 1 }}
+              >
+                <img src={pokemon.sprite} alt={pokemon.name} style={{ width: '100%', height: '80px', objectFit: 'contain', imageRendering: 'pixelated', filter: opponentFainted.includes(pokemon.position) ? 'grayscale(1)' : 'none' }} />
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.85rem', fontWeight: 700, textAlign: 'center', marginTop: '0.5rem', textTransform: 'capitalize' }}>{pokemon.nickname || pokemon.name}</h3>
+                {opponentFainted.includes(pokemon.position) && (
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.65rem', color: 'var(--red)', textAlign: 'center', marginTop: '0.25rem' }}>FAINTED</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
       </main>
+        </>
+        )}
     </div>
   );
 }
