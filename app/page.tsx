@@ -55,6 +55,20 @@ export default function Home() {
     loadTeams();
   }, [loadTeams]);
 
+  const sortedTeams = [...teams].sort((a, b) => {
+    if (sortBy === 'favorite') return (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0);
+    if (sortBy === 'name') return a.name.localeCompare(b.name);
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const filteredTeams = sortedTeams.filter(team => {
+    if (searchQuery && !team.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
+        !team.pokemon.some(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
+    if (filterType === 'favorites' && !team.favorite) return false;
+    if (typeFilter !== 'all' && !team.pokemon.some(p => p.types.includes(typeFilter))) return false;
+    return true;
+  });
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'n' && (e.ctrlKey || e.metaKey)) {
@@ -107,20 +121,6 @@ export default function Home() {
       setEditingName('');
     }
   };
-
-  const sortedTeams = [...teams].sort((a, b) => {
-    if (sortBy === 'favorite') return (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0);
-    if (sortBy === 'name') return a.name.localeCompare(b.name);
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-
-  const filteredTeams = sortedTeams.filter(team => {
-    if (searchQuery && !team.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !team.pokemon.some(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
-    if (filterType === 'favorites' && !team.favorite) return false;
-    if (typeFilter !== 'all' && !team.pokemon.some(p => p.types.includes(typeFilter))) return false;
-    return true;
-  });
 
   const recentTeams = [...teams].sort((a, b) => 
     new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
