@@ -14,7 +14,7 @@ export interface Pokemon {
   abilities: string[];
   height: number;
   weight: number;
-  moves?: Move[];
+  moves?: Move[] | string[];
 }
 
 export interface Move {
