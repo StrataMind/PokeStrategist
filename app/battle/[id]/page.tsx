@@ -447,9 +447,9 @@ export default function BattleSimulator() {
             ))}
           </div>
         </div>
-      </main>
-        </>
+          </>
         )}
+      </main>
     </div>
   );
 }
