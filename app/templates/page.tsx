@@ -74,10 +74,17 @@ export default function TemplatesPage() {
                 {template.pokemon.map((p, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', background: i % 2 === 0 ? 'white' : 'transparent', borderBottom: i < template.pokemon.length - 1 ? '1px solid var(--border)' : 'none' }}>
                     <img 
-                      src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.name.replace(/-/g, '')}.png`}
+                      src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.name}.png`}
                       alt={p.name}
                       style={{ width: '48px', height: '48px', imageRendering: 'pixelated' }}
-                      onError={(e) => { e.currentTarget.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.name.split('-')[0]}.png`; }}
+                      onError={(e) => { 
+                        const target = e.currentTarget;
+                        if (target.src.includes('-')) {
+                          target.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.name.split('-')[0]}.png`;
+                        } else {
+                          target.style.display = 'none';
+                        }
+                      }}
                     />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.95rem', fontWeight: 700, textTransform: 'capitalize', color: 'var(--ink)' }}>
