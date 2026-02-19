@@ -73,7 +73,7 @@ export default function Pokedex() {
         );
 
         // Fetch variants (forms, megas, regional) - only real ones from PokeAPI
-        const variantResponse = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1000&offset=10001');
+        const variantResponse = await fetch('https://pokeapi.co/api/v2/pokemon?limit=325&offset=1025');
         const variantData = await variantResponse.json();
         
         const variants = await Promise.all(
