@@ -52,7 +52,7 @@ export default function Pokedex() {
 
   useEffect(() => {
     // Load teams from localStorage
-    const stored = localStorage.getItem('pokemon-teams');
+    const stored = localStorage.getItem('teams');
     if (stored) {
       setTeams(JSON.parse(stored));
     }
@@ -165,7 +165,7 @@ export default function Pokedex() {
   const handleAddToTeam = (pokemonName: string) => {
     setSelectedPokemon(pokemonName);
     // Reload teams from localStorage
-    const stored = localStorage.getItem('pokemon-teams');
+    const stored = localStorage.getItem('teams');
     if (stored) {
       setTeams(JSON.parse(stored));
     }
@@ -175,7 +175,7 @@ export default function Pokedex() {
   const addPokemonToTeam = async (teamId: string) => {
     if (!selectedPokemon) return;
     
-    const stored = localStorage.getItem('pokemon-teams');
+    const stored = localStorage.getItem('teams');
     if (!stored) return;
     
     const allTeams = JSON.parse(stored);
@@ -211,7 +211,7 @@ export default function Pokedex() {
     
     team.pokemon.push(newPokemon);
     team.updatedAt = Date.now();
-    localStorage.setItem('pokemon-teams', JSON.stringify(allTeams));
+    localStorage.setItem('teams', JSON.stringify(allTeams));
     
     setShowTeamModal(false);
     setSelectedPokemon(null);
