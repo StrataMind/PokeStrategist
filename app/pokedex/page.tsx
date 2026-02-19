@@ -19,9 +19,10 @@ export default function Pokedex() {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [regionFilter, setRegionFilter] = useState('all');
+  const [formFilter, setFormFilter] = useState('all');
 
   const regions = [
-    { name: 'all', label: 'All Regions', range: [1, 1025] },
+    { name: 'all', label: 'All Regions', range: [1, 10000] },
     { name: 'kanto', label: 'Kanto (Gen 1)', range: [1, 151] },
     { name: 'johto', label: 'Johto (Gen 2)', range: [152, 251] },
     { name: 'hoenn', label: 'Hoenn (Gen 3)', range: [252, 386] },
@@ -33,23 +34,34 @@ export default function Pokedex() {
     { name: 'paldea', label: 'Paldea (Gen 9)', range: [906, 1025] },
   ];
 
+  const formTypes = [
+    { value: 'all', label: 'All Forms' },
+    { value: 'mega', label: 'Mega Evolution' },
+    { value: 'alola', label: 'Alolan Forms' },
+    { value: 'galar', label: 'Galarian Forms' },
+    { value: 'hisui', label: 'Hisuian Forms' },
+    { value: 'paldea', label: 'Paldean Forms' },
+    { value: 'gmax', label: 'Gigantamax' },
+  ];
+
   const types = ['all', 'normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'];
 
   useEffect(() => {
     const fetchPokemon = async () => {
       try {
-        const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+        // Fetch all Pokemon including forms
+        const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=2000');
         const data = await response.json();
         
         const pokemonData = await Promise.all(
-          data.results.map(async (p: any, index: number) => {
+          data.results.map(async (p: any) => {
             try {
               const res = await fetch(p.url);
               const details = await res.json();
               return {
-                id: index + 1,
+                id: details.id,
                 name: details.name,
-                sprite: details.sprites.front_default || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png',
+                sprite: details.sprites.front_default || details.sprites.other?.['official-artwork']?.front_default || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png',
                 types: details.types.map((t: any) => t.type.name)
               };
             } catch {
@@ -81,6 +93,10 @@ export default function Pokedex() {
       filtered = filtered.filter(p => p.types.includes(typeFilter));
     }
 
+    if (formFilter !== 'all') {
+      filtered = filtered.filter(p => p.name.includes(formFilter));
+    }
+
     if (regionFilter !== 'all') {
       const region = regions.find(r => r.name === regionFilter);
       if (region) {
@@ -89,7 +105,7 @@ export default function Pokedex() {
     }
 
     setFilteredPokemon(filtered);
-  }, [searchQuery, typeFilter, regionFilter, pokemon]);
+  }, [searchQuery, typeFilter, regionFilter, formFilter, pokemon]);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', fontFamily: "'Libre Baskerville', Georgia, serif" }}>
@@ -107,7 +123,7 @@ export default function Pokedex() {
 
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
         <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', padding: '1.5rem', marginBottom: '2rem', boxShadow: '4px 4px 0 var(--border)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px 200px', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 180px 180px', gap: '1rem' }}>
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
@@ -133,6 +149,15 @@ export default function Pokedex() {
             >
               {regions.map(region => (
                 <option key={region.name} value={region.name}>{region.label}</option>
+              ))}
+            </select>
+            <select
+              value={formFilter}
+              onChange={(e) => setFormFilter(e.target.value)}
+              style={{ padding: '0.75rem', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', outline: 'none', cursor: 'pointer' }}
+            >
+              {formTypes.map(form => (
+                <option key={form.value} value={form.value}>{form.label}</option>
               ))}
             </select>
           </div>
