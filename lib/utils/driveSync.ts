@@ -4,6 +4,21 @@ const BACKUP_FILENAME = 'pokestrategist-teams.json';
 
 export async function syncToDrive(accessToken: string, teams: any[]) {
   try {
+    // Validate input
+    if (!accessToken || typeof accessToken !== 'string') {
+      return { success: false, error: 'Invalid token' };
+    }
+    
+    if (!Array.isArray(teams)) {
+      return { success: false, error: 'Invalid data' };
+    }
+    
+    // Limit file size to 5MB
+    const fileContent = JSON.stringify(teams, null, 2);
+    if (fileContent.length > 5 * 1024 * 1024) {
+      return { success: false, error: 'Data too large' };
+    }
+    
     const auth = new google.auth.OAuth2();
     auth.setCredentials({ access_token: accessToken });
     
@@ -16,7 +31,6 @@ export async function syncToDrive(accessToken: string, teams: any[]) {
       spaces: 'appDataFolder',
     });
     
-    const fileContent = JSON.stringify(teams, null, 2);
     const media = {
       mimeType: 'application/json',
       body: fileContent,
@@ -45,12 +59,17 @@ export async function syncToDrive(accessToken: string, teams: any[]) {
     return { success: true };
   } catch (error) {
     console.error('Drive sync error:', error);
-    return { success: false, error };
+    return { success: false, error: 'Sync failed' };
   }
 }
 
 export async function loadFromDrive(accessToken: string) {
   try {
+    // Validate input
+    if (!accessToken || typeof accessToken !== 'string') {
+      return { success: false, error: 'Invalid token', teams: [] };
+    }
+    
     const auth = new google.auth.OAuth2();
     auth.setCredentials({ access_token: accessToken });
     
@@ -73,9 +92,15 @@ export async function loadFromDrive(accessToken: string) {
       alt: 'media',
     });
     
-    return { success: true, teams: response.data };
+    // Validate response is array
+    const teams = response.data;
+    if (!Array.isArray(teams)) {
+      return { success: false, error: 'Invalid data format', teams: [] };
+    }
+    
+    return { success: true, teams };
   } catch (error) {
     console.error('Drive load error:', error);
-    return { success: false, error, teams: [] };
+    return { success: false, error: 'Load failed', teams: [] };
   }
 }
