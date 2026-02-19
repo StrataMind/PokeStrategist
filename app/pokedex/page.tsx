@@ -133,7 +133,12 @@ export default function Pokedex() {
     }
 
     if (formFilter !== 'all') {
-      filtered = filtered.filter(p => p.name.includes(formFilter));
+      filtered = filtered.filter(p => {
+        const name = p.name.toLowerCase();
+        if (formFilter === 'mega') return name.includes('mega');
+        if (formFilter === 'gmax') return name.includes('gmax');
+        return name.includes(`-${formFilter}`);
+      });
     }
 
     if (regionFilter !== 'all') {
