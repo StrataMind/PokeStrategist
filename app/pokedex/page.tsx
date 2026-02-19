@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Search } from 'lucide-react';
 import { getTypeColor } from '@/lib/utils';
+import Toast from '@/components/Toast';
 
 interface PokemonEntry {
   id: number;
@@ -24,6 +25,7 @@ export default function Pokedex() {
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [selectedPokemon, setSelectedPokemon] = useState<string | null>(null);
   const [teams, setTeams] = useState<any[]>([]);
+  const [toast, setToast] = useState<string | null>(null);
 
   const regions = [
     { name: 'all', label: 'All Regions', range: [1, 10000] },
@@ -184,7 +186,8 @@ export default function Pokedex() {
     
     // Check if team is full
     if (team.pokemon.length >= team.maxSize) {
-      alert('Team is full!');
+      setToast('Team is full!');
+      setShowTeamModal(false);
       return;
     }
     
@@ -215,7 +218,7 @@ export default function Pokedex() {
     
     setShowTeamModal(false);
     setSelectedPokemon(null);
-    alert(`${details.name} added to ${team.name}!`);
+    setToast(`${details.name} added to ${team.name}!`);
   };
 
   return (
@@ -336,6 +339,8 @@ export default function Pokedex() {
           </div>
         </div>
       )}
+
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </div>
   );
 }
