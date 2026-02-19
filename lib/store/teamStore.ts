@@ -9,6 +9,8 @@ interface TeamStore {
   historyIndex: number;
   theme: 'light' | 'dark';
   loadTeams: () => void;
+  syncToDrive: (accessToken: string) => Promise<void>;
+  loadFromDrive: (accessToken: string) => Promise<void>;
   createTeam: (name: string, maxSize: number) => void;
   deleteTeam: (id: string) => void;
   duplicateTeam: (id: string) => void;
@@ -46,6 +48,28 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
         const teams = JSON.parse(stored);
         set({ teams, history: [teams], historyIndex: 0 });
       }
+    }
+  },
+
+  syncToDrive: async (accessToken: string) => {
+    const teams = get().teams;
+    await fetch('/api/drive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'sync', accessToken, teams }),
+    });
+  },
+
+  loadFromDrive: async (accessToken: string) => {
+    const res = await fetch('/api/drive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'load', accessToken }),
+    });
+    const data = await res.json();
+    if (data.success && data.teams.length > 0) {
+      set({ teams: data.teams });
+      localStorage.setItem('teams', JSON.stringify(data.teams));
     }
   },
 

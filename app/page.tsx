@@ -39,7 +39,7 @@ const navItems = [
 
 export default function Home() {
   const { data: session } = useSession();
-  const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam, toggleFavorite, renameTeam, exportTeam, importTeam, exportAllTeams, importShowdown, exportShowdown, bulkDelete, bulkExport, bulkFavorite, undo, redo, theme, toggleTheme } = useTeamStore();
+  const { teams, loadTeams, syncToDrive, loadFromDrive, createTeam, deleteTeam, duplicateTeam, toggleFavorite, renameTeam, exportTeam, importTeam, exportAllTeams, importShowdown, exportShowdown, bulkDelete, bulkExport, bulkFavorite, undo, redo, theme, toggleTheme } = useTeamStore();
   const [showCreate, setShowCreate] = useState(false);
   const [teamName, setTeamName] = useState('');
   const [teamSize, setTeamSize] = useState(6);
@@ -56,7 +56,11 @@ export default function Home() {
 
   useEffect(() => {
     loadTeams();
-  }, [loadTeams]);
+    // Load from Drive when signed in
+    if (session?.accessToken) {
+      loadFromDrive(session.accessToken as string);
+    }
+  }, [loadTeams, loadFromDrive, session]);
 
   const sortedTeams = [...teams].sort((a, b) => {
     if (sortBy === 'favorite') return (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0);
@@ -104,6 +108,10 @@ export default function Home() {
       setTeamName('');
       setTeamSize(6);
       setShowCreate(false);
+      // Auto-sync to Drive
+      if (session?.accessToken) {
+        setTimeout(() => syncToDrive(session.accessToken as string), 500);
+      }
     }
   };
 
@@ -111,6 +119,10 @@ export default function Home() {
     if (deleteConfirm === id) {
       deleteTeam(id);
       setDeleteConfirm(null);
+      // Auto-sync to Drive
+      if (session?.accessToken) {
+        setTimeout(() => syncToDrive(session.accessToken as string), 500);
+      }
     } else {
       setDeleteConfirm(id);
       setTimeout(() => setDeleteConfirm(null), 3000);
