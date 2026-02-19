@@ -164,6 +164,11 @@ export default function Pokedex() {
 
   const handleAddToTeam = (pokemonName: string) => {
     setSelectedPokemon(pokemonName);
+    // Reload teams from localStorage
+    const stored = localStorage.getItem('pokemon-teams');
+    if (stored) {
+      setTeams(JSON.parse(stored));
+    }
     setShowTeamModal(true);
   };
 
