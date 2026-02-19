@@ -21,6 +21,9 @@ export default function Pokedex() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [regionFilter, setRegionFilter] = useState('all');
   const [formFilter, setFormFilter] = useState('all');
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [selectedPokemon, setSelectedPokemon] = useState<string | null>(null);
+  const [teams, setTeams] = useState<any[]>([]);
 
   const regions = [
     { name: 'all', label: 'All Regions', range: [1, 10000] },
@@ -46,6 +49,14 @@ export default function Pokedex() {
   ];
 
   const types = ['all', 'normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'];
+
+  useEffect(() => {
+    // Load teams from localStorage
+    const stored = localStorage.getItem('pokemon-teams');
+    if (stored) {
+      setTeams(JSON.parse(stored));
+    }
+  }, []);
 
   useEffect(() => {
     const fetchPokemon = async () => {
@@ -151,6 +162,57 @@ export default function Pokedex() {
     setFilteredPokemon(filtered);
   }, [searchQuery, typeFilter, regionFilter, formFilter, pokemon]);
 
+  const handleAddToTeam = (pokemonName: string) => {
+    setSelectedPokemon(pokemonName);
+    setShowTeamModal(true);
+  };
+
+  const addPokemonToTeam = async (teamId: string) => {
+    if (!selectedPokemon) return;
+    
+    const stored = localStorage.getItem('pokemon-teams');
+    if (!stored) return;
+    
+    const allTeams = JSON.parse(stored);
+    const team = allTeams.find((t: any) => t.id === teamId);
+    if (!team) return;
+    
+    // Check if team is full
+    if (team.pokemon.length >= team.maxSize) {
+      alert('Team is full!');
+      return;
+    }
+    
+    // Fetch Pokemon details
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${selectedPokemon}`);
+    const details = await res.json();
+    
+    const newPokemon = {
+      id: details.id,
+      name: details.name,
+      sprite: details.sprites.front_default,
+      types: details.types.map((t: any) => t.type.name),
+      stats: details.stats.reduce((acc: any, s: any) => {
+        acc[s.stat.name] = s.base_stat;
+        return acc;
+      }, {}),
+      abilities: details.abilities.map((a: any) => a.ability.name),
+      moves: details.moves.slice(0, 4).map((m: any) => ({
+        name: m.move.name,
+        type: 'normal',
+        power: 50
+      }))
+    };
+    
+    team.pokemon.push(newPokemon);
+    team.updatedAt = Date.now();
+    localStorage.setItem('pokemon-teams', JSON.stringify(allTeams));
+    
+    setShowTeamModal(false);
+    setSelectedPokemon(null);
+    alert(`${details.name} added to ${team.name}!`);
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', fontFamily: "'Libre Baskerville', Georgia, serif" }}>
       <header style={{ height: '64px', background: 'var(--parchment)', borderBottom: '2px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 2rem', gap: '1rem' }}>
@@ -214,7 +276,7 @@ export default function Pokedex() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.5rem' }}>
             {filteredPokemon.map(p => (
-              <div key={p.id + p.name} style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: p.isVariant ? '4px solid #3A6EA5' : '4px solid var(--gold)', padding: '1rem', boxShadow: '4px 4px 0 var(--border)', transition: 'transform 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+              <div key={p.id + p.name} style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: p.isVariant ? '4px solid #3A6EA5' : '4px solid var(--gold)', padding: '1rem', boxShadow: '4px 4px 0 var(--border)', transition: 'transform 0.2s', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'} onClick={() => handleAddToTeam(p.name)}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: 'var(--ink-muted)', marginBottom: '0.5rem' }}>
                     #{String(p.id).padStart(4, '0')}{p.isVariant && <span style={{ color: '#3A6EA5', marginLeft: '0.25rem' }}>VARIANT</span>}
@@ -234,6 +296,41 @@ export default function Pokedex() {
           </div>
         )}
       </main>
+
+      {showTeamModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }} onClick={() => setShowTeamModal(false)}>
+          <div style={{ background: 'var(--parchment)', border: '2px solid var(--border)', padding: '2rem', maxWidth: '500px', width: '90%', maxHeight: '80vh', overflow: 'auto', boxShadow: '8px 8px 0 var(--border)' }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Add to Team</h2>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', color: 'var(--ink-muted)', marginBottom: '1.5rem', textTransform: 'capitalize' }}>Adding: {selectedPokemon}</p>
+            
+            {teams.length === 0 ? (
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', color: 'var(--ink-muted)', textAlign: 'center', padding: '2rem' }}>No teams created yet. Create a team first!</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {teams.map(team => (
+                  <button
+                    key={team.id}
+                    onClick={() => addPokemonToTeam(team.id)}
+                    style={{ padding: '1rem', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', background: 'var(--cream)', textAlign: 'left', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', transition: 'all 0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--parchment)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--cream)'}
+                  >
+                    <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{team.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>{team.pokemon.length}/{team.maxSize} Pokémon</div>
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            <button
+              onClick={() => setShowTeamModal(false)}
+              style={{ marginTop: '1.5rem', width: '100%', padding: '0.75rem', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', background: 'var(--cream)', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
