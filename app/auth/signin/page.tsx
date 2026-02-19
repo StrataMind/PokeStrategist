@@ -1,104 +1,25 @@
 'use client';
 
-import { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 export default function SignIn() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    });
-
-    if (result?.error) {
-      setError('Invalid credentials');
-      setLoading(false);
-    } else {
-      router.push('/');
-    }
-  };
-
-  const handleGoogleSignIn = () => {
-    signIn('google', { callbackUrl: '/' });
-  };
-
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--cream)', padding: '2rem' }}>
-      <div style={{ background: 'var(--parchment)', border: '2px solid var(--gold)', padding: '3rem', maxWidth: '450px', width: '100%', boxShadow: '8px 8px 0 var(--border)' }}>
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2rem', fontWeight: 700, textAlign: 'center', marginBottom: '0.5rem', color: 'var(--ink)' }}>
+      <div style={{ background: 'var(--parchment)', border: '2px solid var(--gold)', padding: '3rem', maxWidth: '450px', width: '100%', boxShadow: '8px 8px 0 var(--border)', textAlign: 'center' }}>
+        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.5rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--ink)' }}>
           ⚡ PokeStrategist
         </h1>
-        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', textAlign: 'center', color: 'var(--ink-muted)', marginBottom: '2rem' }}>
-          Sign in to your account
+        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', color: 'var(--ink-muted)', marginBottom: '3rem' }}>
+          Sign in to sync your teams across devices
         </p>
 
-        {error && (
-          <div style={{ background: 'var(--red)', color: 'white', padding: '0.75rem', marginBottom: '1.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', border: '1px solid var(--border)' }}>
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div>
-            <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', marginBottom: '0.5rem', color: 'var(--ink)' }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{ width: '100%', padding: '0.75rem', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', outline: 'none' }}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', marginBottom: '0.5rem', color: 'var(--ink)' }}>
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{ width: '100%', padding: '0.75rem', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', outline: 'none' }}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{ padding: '0.875rem', background: 'var(--gold)', border: '2px solid var(--gold-dark)', color: 'var(--ink)', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-
-        <div style={{ margin: '1.5rem 0', textAlign: 'center', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'var(--border)' }} />
-          <span style={{ position: 'relative', background: 'var(--parchment)', padding: '0 1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink-muted)' }}>
-            OR
-          </span>
-        </div>
-
         <button
-          onClick={handleGoogleSignIn}
-          style={{ width: '100%', padding: '0.875rem', background: 'white', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+          onClick={() => signIn('google', { callbackUrl: '/' })}
+          style={{ width: '100%', padding: '1rem', background: 'white', border: '2px solid var(--border)', borderBottom: '3px solid var(--ink-muted)', fontFamily: "'DM Mono', monospace", fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', transition: 'all 0.2s' }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
         >
-          <svg width="18" height="18" viewBox="0 0 18 18">
+          <svg width="20" height="20" viewBox="0 0 18 18">
             <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
             <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
             <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707 0-.593.102-1.17.282-1.709V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.335z"/>
@@ -107,11 +28,8 @@ export default function SignIn() {
           Continue with Google
         </button>
 
-        <p style={{ marginTop: '1.5rem', textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', color: 'var(--ink-muted)' }}>
-          Don't have an account?{' '}
-          <Link href="/auth/signup" style={{ color: 'var(--gold-dark)', textDecoration: 'underline' }}>
-            Sign up
-          </Link>
+        <p style={{ marginTop: '2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', color: 'var(--ink-muted)', lineHeight: 1.6 }}>
+          Your teams are stored locally. Sign in to backup and sync across devices.
         </p>
       </div>
     </div>
