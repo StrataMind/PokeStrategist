@@ -72,8 +72,8 @@ export default function Pokedex() {
           })
         );
 
-        // Fetch variants (forms, megas, regional)
-        const variantResponse = await fetch('https://pokeapi.co/api/v2/pokemon?limit=2000&offset=1025');
+        // Fetch variants (forms, megas, regional) - only real ones from PokeAPI
+        const variantResponse = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1000&offset=10001');
         const variantData = await variantResponse.json();
         
         const variants = await Promise.all(
@@ -82,10 +82,10 @@ export default function Pokedex() {
               const res = await fetch(p.url);
               const details = await res.json();
               
-              // Extract base Pokemon ID from name
-              const baseName = details.name.split('-')[0];
-              const baseIndex = basePokemon.findIndex(bp => bp?.name === baseName);
-              const baseId = baseIndex >= 0 ? baseIndex + 1 : 10000;
+              // Extract base Pokemon ID from species URL
+              const speciesRes = await fetch(details.species.url);
+              const speciesData = await speciesRes.json();
+              const baseId = speciesData.id;
               
               return {
                 id: baseId,
