@@ -177,7 +177,7 @@ export default function Pokedex() {
                   <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, textTransform: 'capitalize', marginTop: '0.5rem', marginBottom: '0.5rem' }}>{p.name}</h3>
                   <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                     {p.types.map(type => (
-                      <span key={type} style={{ fontSize: '0.65rem', padding: '2px 8px', background: getTypeColor(type).replace('bg-', ''), color: 'white', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
+                      <span key={type} style={{ fontSize: '0.65rem', padding: '2px 8px', background: '#3A6EA5', color: 'white', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
                         {type}
                       </span>
                     ))}
