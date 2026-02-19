@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { useTeamStore } from '@/lib/store/teamStore';
 import { Plus, Trash2, Copy, Download, Upload, Star, Edit2, Save, X as XIcon, Calculator, TrendingUp, Home as HomeIcon, Swords, MoreVertical, BarChart3, CheckCircle, Share2, Moon, Sun, Undo, Redo, CheckSquare, Square, Zap, AlertCircle, Info, Image as ImageIcon, Clock, GitCompare } from 'lucide-react';
 import Link from 'next/link';
@@ -37,6 +38,7 @@ const navItems = [
 ];
 
 export default function Home() {
+  const { data: session } = useSession();
   const { teams, loadTeams, createTeam, deleteTeam, duplicateTeam, toggleFavorite, renameTeam, exportTeam, importTeam, exportAllTeams, importShowdown, exportShowdown, bulkDelete, bulkExport, bulkFavorite, undo, redo, theme, toggleTheme } = useTeamStore();
   const [showCreate, setShowCreate] = useState(false);
   const [teamName, setTeamName] = useState('');
@@ -198,6 +200,16 @@ export default function Home() {
           <button onClick={undo} disabled={!teams.length} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem', color: 'var(--ink-muted)', cursor: 'pointer' }} title="Undo (Ctrl+Z)">↶</button>
           <button onClick={redo} disabled={!teams.length} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem', color: 'var(--ink-muted)', cursor: 'pointer' }} title="Redo (Ctrl+Y)">↷</button>
           <button onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem', color: 'var(--ink-muted)', cursor: 'pointer' }} title="Keyboard Shortcuts (?)">⌨</button>
+
+          {session ? (
+            <button onClick={() => signOut()} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem 0.85rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink-muted)', cursor: 'pointer' }} title={session.user?.email || ''}>
+              {session.user?.name || 'Sign Out'}
+            </button>
+          ) : (
+            <button onClick={() => signIn()} style={{ background: 'var(--gold)', border: '2px solid var(--gold-dark)', padding: '0.45rem 0.85rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', cursor: 'pointer', letterSpacing: '0.05em' }}>
+              Sign In
+            </button>
+          )}
 
           {selectedTeams.length > 0 && (
             <>
