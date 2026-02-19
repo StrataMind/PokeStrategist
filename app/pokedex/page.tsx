@@ -10,6 +10,7 @@ interface PokemonEntry {
   name: string;
   sprite: string;
   types: string[];
+  isVariant: boolean;
 }
 
 export default function Pokedex() {
@@ -49,20 +50,49 @@ export default function Pokedex() {
   useEffect(() => {
     const fetchPokemon = async () => {
       try {
-        // Fetch all Pokemon including forms
-        const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=2000');
-        const data = await response.json();
+        // Fetch base Pokemon (1-1025)
+        const baseResponse = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+        const baseData = await baseResponse.json();
         
-        const pokemonData = await Promise.all(
-          data.results.map(async (p: any) => {
+        const basePokemon = await Promise.all(
+          baseData.results.map(async (p: any, index: number) => {
             try {
               const res = await fetch(p.url);
               const details = await res.json();
               return {
-                id: details.id,
+                id: index + 1,
                 name: details.name,
                 sprite: details.sprites.front_default || details.sprites.other?.['official-artwork']?.front_default || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png',
-                types: details.types.map((t: any) => t.type.name)
+                types: details.types.map((t: any) => t.type.name),
+                isVariant: false
+              };
+            } catch {
+              return null;
+            }
+          })
+        );
+
+        // Fetch variants (forms, megas, regional)
+        const variantResponse = await fetch('https://pokeapi.co/api/v2/pokemon?limit=2000&offset=1025');
+        const variantData = await variantResponse.json();
+        
+        const variants = await Promise.all(
+          variantData.results.map(async (p: any) => {
+            try {
+              const res = await fetch(p.url);
+              const details = await res.json();
+              
+              // Extract base Pokemon ID from name
+              const baseName = details.name.split('-')[0];
+              const baseIndex = basePokemon.findIndex(bp => bp?.name === baseName);
+              const baseId = baseIndex >= 0 ? baseIndex + 1 : 10000;
+              
+              return {
+                id: baseId,
+                name: details.name,
+                sprite: details.sprites.front_default || details.sprites.other?.['official-artwork']?.front_default || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png',
+                types: details.types.map((t: any) => t.type.name),
+                isVariant: true
               };
             } catch {
               return null;
@@ -70,9 +100,18 @@ export default function Pokedex() {
           })
         );
         
-        const validPokemon = pokemonData.filter(p => p !== null) as PokemonEntry[];
-        setPokemon(validPokemon);
-        setFilteredPokemon(validPokemon);
+        const allPokemon = [...basePokemon.filter(p => p !== null), ...variants.filter(p => p !== null)] as PokemonEntry[];
+        
+        // Sort by ID, then by name (variants after base)
+        allPokemon.sort((a, b) => {
+          if (a.id !== b.id) return a.id - b.id;
+          if (!a.isVariant && b.isVariant) return -1;
+          if (a.isVariant && !b.isVariant) return 1;
+          return a.name.localeCompare(b.name);
+        });
+        
+        setPokemon(allPokemon);
+        setFilteredPokemon(allPokemon);
         setLoading(false);
       } catch (error) {
         setLoading(false);
@@ -170,9 +209,11 @@ export default function Pokedex() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.5rem' }}>
             {filteredPokemon.map(p => (
-              <div key={p.id} style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: '4px solid var(--gold)', padding: '1rem', boxShadow: '4px 4px 0 var(--border)', transition: 'transform 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+              <div key={p.id + p.name} style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: p.isVariant ? '4px solid #3A6EA5' : '4px solid var(--gold)', padding: '1rem', boxShadow: '4px 4px 0 var(--border)', transition: 'transform 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: 'var(--ink-muted)', marginBottom: '0.5rem' }}>#{String(p.id).padStart(4, '0')}</div>
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: 'var(--ink-muted)', marginBottom: '0.5rem' }}>
+                    #{String(p.id).padStart(4, '0')}{p.isVariant && <span style={{ color: '#3A6EA5', marginLeft: '0.25rem' }}>VARIANT</span>}
+                  </div>
                   <img src={p.sprite} alt={p.name} style={{ width: '96px', height: '96px', margin: '0 auto', imageRendering: 'pixelated' }} />
                   <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, textTransform: 'capitalize', marginTop: '0.5rem', marginBottom: '0.5rem' }}>{p.name}</h3>
                   <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', flexWrap: 'wrap' }}>
