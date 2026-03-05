@@ -2,6 +2,19 @@ import { create } from 'zustand';
 import { Team, TeamPokemon } from '@/types/team';
 import { parseShowdown, exportShowdown } from '@/lib/utils/showdown';
 
+// Debounced localStorage writer — batches rapid updates into a single write
+let _persistTimer: ReturnType<typeof setTimeout>;
+function persistTeams(teams: Team[]): void {
+  clearTimeout(_persistTimer);
+  _persistTimer = setTimeout(() => {
+    try {
+      persistTeams(teams);
+    } catch (e) {
+      console.error('Failed to persist teams:', e);
+    }
+  }, 300);
+}
+
 interface TeamStore {
   teams: Team[];
   currentTeam: Team | null;
@@ -52,24 +65,34 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   },
 
   syncToDrive: async (accessToken: string) => {
-    const teams = get().teams;
-    await fetch('/api/drive', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'sync', accessToken, teams }),
-    });
+    try {
+      const teams = get().teams;
+      const res = await fetch('/api/drive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync', accessToken, teams }),
+      });
+      if (!res.ok) throw new Error(`Drive sync failed: ${res.status}`);
+    } catch (error) {
+      console.error('Drive sync error:', error);
+    }
   },
 
   loadFromDrive: async (accessToken: string) => {
-    const res = await fetch('/api/drive', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'load', accessToken }),
-    });
-    const data = await res.json();
-    if (data.success && data.teams.length > 0) {
-      set({ teams: data.teams });
-      localStorage.setItem('teams', JSON.stringify(data.teams));
+    try {
+      const res = await fetch('/api/drive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'load', accessToken }),
+      });
+      if (!res.ok) throw new Error(`Drive load failed: ${res.status}`);
+      const data = await res.json();
+      if (data.success && data.teams?.length > 0) {
+        set({ teams: data.teams });
+        persistTeams(data.teams);
+      }
+    } catch (error) {
+      console.error('Drive load error:', error);
     }
   },
 
@@ -85,14 +108,14 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     const teams = [...get().teams, newTeam];
     const history = [...get().history.slice(0, get().historyIndex + 1), teams].slice(-10);
     set({ teams, history, historyIndex: history.length - 1 });
-    localStorage.setItem('teams', JSON.stringify(teams));
+    persistTeams(teams);
   },
 
   deleteTeam: (id: string) => {
     const teams = get().teams.filter(t => t.id !== id);
     const history = [...get().history.slice(0, get().historyIndex + 1), teams].slice(-10);
     set({ teams, currentTeam: get().currentTeam?.id === id ? null : get().currentTeam, history, historyIndex: history.length - 1 });
-    localStorage.setItem('teams', JSON.stringify(teams));
+    persistTeams(teams);
   },
 
   duplicateTeam: (id: string) => {
@@ -107,7 +130,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       };
       const teams = [...get().teams, newTeam];
       set({ teams });
-      localStorage.setItem('teams', JSON.stringify(teams));
+      persistTeams(teams);
     }
   },
 
@@ -116,7 +139,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       t.id === id ? { ...t, favorite: !t.favorite } : t
     );
     set({ teams });
-    localStorage.setItem('teams', JSON.stringify(teams));
+    persistTeams(teams);
   },
 
   renameTeam: (id: string, name: string) => {
@@ -124,7 +147,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       t.id === id ? { ...t, name, updatedAt: new Date().toISOString() } : t
     );
     set({ teams });
-    localStorage.setItem('teams', JSON.stringify(teams));
+    persistTeams(teams);
   },
 
   setCurrentTeam: (id: string) => {
@@ -144,7 +167,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       return team;
     });
     set({ teams });
-    localStorage.setItem('teams', JSON.stringify(teams));
+    persistTeams(teams);
   },
 
   removePokemon: (teamId: string, position: number) => {
@@ -159,7 +182,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       return team;
     });
     set({ teams });
-    localStorage.setItem('teams', JSON.stringify(teams));
+    persistTeams(teams);
   },
 
   reorderPokemon: (teamId: string, fromPos: number, toPos: number) => {
@@ -177,7 +200,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       return team;
     });
     set({ teams });
-    localStorage.setItem('teams', JSON.stringify(teams));
+    persistTeams(teams);
   },
 
   updatePokemon: (teamId: string, position: number, updates: Partial<TeamPokemon>) => {
@@ -194,7 +217,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       return team;
     });
     set({ teams });
-    localStorage.setItem('teams', JSON.stringify(teams));
+    persistTeams(teams);
   },
 
   exportTeam: (teamId: string) => {
@@ -211,7 +234,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       team.updatedAt = new Date().toISOString();
       const teams = [...get().teams, team];
       set({ teams });
-      localStorage.setItem('teams', JSON.stringify(teams));
+      persistTeams(teams);
     } catch (error) {
       console.error('Invalid team data');
     }
@@ -235,7 +258,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       const teams = [...get().teams, newTeam];
       const history = [...get().history.slice(0, get().historyIndex + 1), teams].slice(-10);
       set({ teams, history, historyIndex: history.length - 1 });
-      localStorage.setItem('teams', JSON.stringify(teams));
+      persistTeams(teams);
     } catch (error) {
       console.error('Invalid Showdown format');
     }
@@ -251,7 +274,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     const teams = get().teams.filter(t => !ids.includes(t.id));
     const history = [...get().history.slice(0, get().historyIndex + 1), teams].slice(-10);
     set({ teams, history, historyIndex: history.length - 1 });
-    localStorage.setItem('teams', JSON.stringify(teams));
+    persistTeams(teams);
   },
 
   bulkExport: (ids: string[]) => {
@@ -262,7 +285,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   bulkFavorite: (ids: string[]) => {
     const teams = get().teams.map(t => ids.includes(t.id) ? { ...t, favorite: true } : t);
     set({ teams });
-    localStorage.setItem('teams', JSON.stringify(teams));
+    persistTeams(teams);
   },
 
   undo: () => {
@@ -270,7 +293,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     if (historyIndex > 0) {
       const teams = history[historyIndex - 1];
       set({ teams, historyIndex: historyIndex - 1 });
-      localStorage.setItem('teams', JSON.stringify(teams));
+      persistTeams(teams);
     }
   },
 
@@ -279,7 +302,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     if (historyIndex < history.length - 1) {
       const teams = history[historyIndex + 1];
       set({ teams, historyIndex: historyIndex + 1 });
-      localStorage.setItem('teams', JSON.stringify(teams));
+      persistTeams(teams);
     }
   },
 

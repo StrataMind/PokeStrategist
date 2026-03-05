@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTeamStore } from '@/lib/store/teamStore';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, Share2, Copy, Check } from 'lucide-react';
 import { getTypeColor } from '@/lib/utils';
 
@@ -93,7 +94,14 @@ export default function ShareTeam() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {team.pokemon.map((pokemon, i) => (
               <div key={i} className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
-                <img src={pokemon.sprite} alt={pokemon.name} className="w-full h-24 object-contain" />
+                <Image
+                  src={pokemon.sprite}
+                  alt={pokemon.name}
+                  width={96}
+                  height={96}
+                  className="w-full h-24 object-contain"
+                  unoptimized
+                />
                 <h3 className="font-black capitalize text-center mt-2">{pokemon.nickname || pokemon.name}</h3>
                 <div className="flex gap-1 justify-center mt-2">
                   {pokemon.types.map(type => (
