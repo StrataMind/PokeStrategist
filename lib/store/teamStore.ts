@@ -8,7 +8,7 @@ function persistTeams(teams: Team[]): void {
   clearTimeout(_persistTimer);
   _persistTimer = setTimeout(() => {
     try {
-      persistTeams(teams);
+      localStorage.setItem('teams', JSON.stringify(teams));
     } catch (e) {
       console.error('Failed to persist teams:', e);
     }
