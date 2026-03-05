@@ -11,17 +11,24 @@ import { getTypeColor } from '@/lib/utils';
 export default function TeamAnalytics() {
   const params = useParams();
   const router = useRouter();
-  const { teams } = useTeamStore();
+  const { teams, loadTeams } = useTeamStore();
   const [team, setTeam] = useState(teams.find(t => t.id === params.id));
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    loadTeams();
+    setIsReady(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!isReady) return;
     const currentTeam = teams.find(t => t.id === params.id);
     if (!currentTeam) {
       router.push('/');
     } else {
       setTeam(currentTeam);
     }
-  }, [teams, params.id, router]);
+  }, [teams, params.id, router, isReady]);
 
   if (!team || team.pokemon.length === 0) {
     return (

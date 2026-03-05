@@ -325,19 +325,23 @@ export default function TeamCard({
               </Link>
               <button
                 onClick={() => { onDuplicate(team.id); setIsDropdownOpen(false); }}
-                style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', border: 'none', borderBottom: '1px solid var(--border)', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', background: 'none', cursor: 'pointer' }}
               >
                 📋 Duplicate
               </button>
               <button
                 onClick={() => { onExportJSON(team.id); setIsDropdownOpen(false); }}
-                style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', border: 'none', borderBottom: '1px solid var(--border)', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', background: 'none', cursor: 'pointer' }}
               >
                 ↓ Export JSON
               </button>
               <button
-                onClick={() => { onDelete(team.id); setIsDropdownOpen(false); }}
-                style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer' }}
+                onClick={() => {
+                  const isConfirming = deleteConfirm === team.id;
+                  onDelete(team.id);
+                  if (isConfirming) setIsDropdownOpen(false); // only close after confirmed delete
+                }}
+                style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', border: 'none', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--red)', background: 'none', cursor: 'pointer' }}
               >
                 🗑 {deleteConfirm === team.id ? 'Confirm?' : 'Delete'}
               </button>

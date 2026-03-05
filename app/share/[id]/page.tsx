@@ -11,12 +11,19 @@ import { getTypeColor } from '@/lib/utils';
 export default function ShareTeam() {
   const params = useParams();
   const router = useRouter();
-  const { teams, exportTeam } = useTeamStore();
+  const { teams, exportTeam, loadTeams } = useTeamStore();
   const [team, setTeam] = useState(teams.find(t => t.id === params.id));
   const [shareUrl, setShareUrl] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    loadTeams();
+    setIsReady(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!isReady) return;
     const currentTeam = teams.find(t => t.id === params.id);
     if (!currentTeam) {
       router.push('/');
@@ -26,7 +33,7 @@ export default function ShareTeam() {
       const encoded = btoa(json);
       setShareUrl(`${window.location.origin}/import?data=${encoded}`);
     }
-  }, [teams, params.id, router, exportTeam]);
+  }, [teams, params.id, router, exportTeam, isReady]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl);
