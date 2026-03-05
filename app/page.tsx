@@ -18,6 +18,7 @@ export default function Home() {
   const { data: session } = useSession();
   const {
     teams, loadTeams, syncToDrive, loadFromDrive,
+    setUserId, loadFromDb,
     createTeam, deleteTeam, duplicateTeam, toggleFavorite, renameTeam,
     exportTeam, importTeam, exportAllTeams, bulkDelete, bulkExport, bulkFavorite,
     undo, redo, theme, toggleTheme,
@@ -41,7 +42,13 @@ export default function Home() {
     if (session?.accessToken) {
       loadFromDrive(session.accessToken as string);
     }
-  }, [loadTeams, loadFromDrive, session]);
+    if (session?.userId) {
+      setUserId(session.userId as string);
+      loadFromDb();
+    } else {
+      setUserId(null);
+    }
+  }, [loadTeams, loadFromDrive, loadFromDb, setUserId, session]);
 
   const sortedTeams = [...teams].sort((a, b) => {
     if (sortBy === 'favorite') return (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0);

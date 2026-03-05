@@ -15,13 +15,33 @@ function persistTeams(teams: Team[]): void {
   }, 300);
 }
 
+// Debounced DB sync — fires 2s after the last mutation when user is signed in
+let _dbSyncTimer: ReturnType<typeof setTimeout>;
+function scheduleDbSync(teams: Team[]): void {
+  clearTimeout(_dbSyncTimer);
+  _dbSyncTimer = setTimeout(async () => {
+    try {
+      await fetch('/api/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teams }),
+      });
+    } catch (e) {
+      console.error('DB sync failed:', e);
+    }
+  }, 2000);
+}
+
 interface TeamStore {
   teams: Team[];
   currentTeam: Team | null;
   history: Team[][];
   historyIndex: number;
   theme: 'light' | 'dark';
+  userId: string | null;
+  setUserId: (userId: string | null) => void;
   loadTeams: () => void;
+  loadFromDb: () => Promise<void>;
   syncToDrive: (accessToken: string) => Promise<void>;
   loadFromDrive: (accessToken: string) => Promise<void>;
   createTeam: (name: string, maxSize: number) => void;
@@ -47,12 +67,43 @@ interface TeamStore {
   toggleTheme: () => void;
 }
 
-export const useTeamStore = create<TeamStore>((set, get) => ({
+export const useTeamStore = create<TeamStore>((set, get) => {
+  // Persists to localStorage AND schedules a DB sync when user is authenticated
+  const saveAndSync = (teams: Team[]) => {
+    persistTeams(teams);
+    if (get().userId) scheduleDbSync(teams);
+  };
+
+  return ({
   teams: [],
   currentTeam: null,
   history: [],
   historyIndex: -1,
+  userId: null,
   theme: (typeof window !== 'undefined' ? localStorage.getItem('theme') as 'light' | 'dark' : 'light') || 'light',
+
+  setUserId: (userId) => set({ userId }),
+
+  loadFromDb: async () => {
+    try {
+      const res = await fetch('/api/teams');
+      if (!res.ok) return;
+      const { teams: dbTeams } = await res.json();
+      if (Array.isArray(dbTeams) && dbTeams.length > 0) {
+        // Merge: DB teams take precedence; keep any local-only teams as well
+        const localTeams = get().teams;
+        const dbIds = new Set(dbTeams.map((t: Team) => t.id));
+        const localOnly = localTeams.filter((t) => !dbIds.has(t.id));
+        const merged = [...dbTeams, ...localOnly];
+        set({ teams: merged, history: [merged], historyIndex: 0 });
+        persistTeams(merged);
+        // Push any local-only teams up to the DB
+        if (localOnly.length > 0) scheduleDbSync(merged);
+      }
+    } catch (e) {
+      console.error('loadFromDb failed:', e);
+    }
+  },
 
   loadTeams: () => {
     if (typeof window !== 'undefined') {
@@ -108,14 +159,14 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     const teams = [...get().teams, newTeam];
     const history = [...get().history.slice(0, get().historyIndex + 1), teams].slice(-10);
     set({ teams, history, historyIndex: history.length - 1 });
-    persistTeams(teams);
+    saveAndSync(teams);
   },
 
   deleteTeam: (id: string) => {
     const teams = get().teams.filter(t => t.id !== id);
     const history = [...get().history.slice(0, get().historyIndex + 1), teams].slice(-10);
     set({ teams, currentTeam: get().currentTeam?.id === id ? null : get().currentTeam, history, historyIndex: history.length - 1 });
-    persistTeams(teams);
+    saveAndSync(teams);
   },
 
   duplicateTeam: (id: string) => {
@@ -130,7 +181,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       };
       const teams = [...get().teams, newTeam];
       set({ teams });
-      persistTeams(teams);
+      saveAndSync(teams);
     }
   },
 
@@ -139,7 +190,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       t.id === id ? { ...t, favorite: !t.favorite } : t
     );
     set({ teams });
-    persistTeams(teams);
+    saveAndSync(teams);
   },
 
   renameTeam: (id: string, name: string) => {
@@ -147,7 +198,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       t.id === id ? { ...t, name, updatedAt: new Date().toISOString() } : t
     );
     set({ teams });
-    persistTeams(teams);
+    saveAndSync(teams);
   },
 
   setCurrentTeam: (id: string) => {
@@ -167,7 +218,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       return team;
     });
     set({ teams });
-    persistTeams(teams);
+    saveAndSync(teams);
   },
 
   removePokemon: (teamId: string, position: number) => {
@@ -182,7 +233,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       return team;
     });
     set({ teams });
-    persistTeams(teams);
+    saveAndSync(teams);
   },
 
   reorderPokemon: (teamId: string, fromPos: number, toPos: number) => {
@@ -200,7 +251,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       return team;
     });
     set({ teams });
-    persistTeams(teams);
+    saveAndSync(teams);
   },
 
   updatePokemon: (teamId: string, position: number, updates: Partial<TeamPokemon>) => {
@@ -217,7 +268,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       return team;
     });
     set({ teams });
-    persistTeams(teams);
+    saveAndSync(teams);
   },
 
   exportTeam: (teamId: string) => {
@@ -234,7 +285,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       team.updatedAt = new Date().toISOString();
       const teams = [...get().teams, team];
       set({ teams });
-      persistTeams(teams);
+      saveAndSync(teams);
     } catch (error) {
       console.error('Invalid team data');
     }
@@ -258,7 +309,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       const teams = [...get().teams, newTeam];
       const history = [...get().history.slice(0, get().historyIndex + 1), teams].slice(-10);
       set({ teams, history, historyIndex: history.length - 1 });
-      persistTeams(teams);
+      saveAndSync(teams);
     } catch (error) {
       console.error('Invalid Showdown format');
     }
@@ -274,7 +325,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     const teams = get().teams.filter(t => !ids.includes(t.id));
     const history = [...get().history.slice(0, get().historyIndex + 1), teams].slice(-10);
     set({ teams, history, historyIndex: history.length - 1 });
-    persistTeams(teams);
+    saveAndSync(teams);
   },
 
   bulkExport: (ids: string[]) => {
@@ -285,7 +336,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   bulkFavorite: (ids: string[]) => {
     const teams = get().teams.map(t => ids.includes(t.id) ? { ...t, favorite: true } : t);
     set({ teams });
-    persistTeams(teams);
+    saveAndSync(teams);
   },
 
   undo: () => {
@@ -293,7 +344,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     if (historyIndex > 0) {
       const teams = history[historyIndex - 1];
       set({ teams, historyIndex: historyIndex - 1 });
-      persistTeams(teams);
+      saveAndSync(teams);
     }
   },
 
@@ -302,7 +353,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     if (historyIndex < history.length - 1) {
       const teams = history[historyIndex + 1];
       set({ teams, historyIndex: historyIndex + 1 });
-      persistTeams(teams);
+      saveAndSync(teams);
     }
   },
 
@@ -312,4 +363,4 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     localStorage.setItem('theme', theme);
     document.documentElement.classList.toggle('dark', theme === 'dark');
   },
-}));
+}); });
