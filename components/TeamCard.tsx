@@ -9,6 +9,7 @@ import PokemonHoverPreview from '@/components/PokemonHoverPreview';
 import { getFormatBadge } from '@/lib/utils/validator';
 import { getTeamCoverage } from '@/lib/utils/teamStats';
 import { exportTeamAsImage } from '@/lib/utils/exportImage';
+import { getTeamRegion, POKEMON_REGIONS } from '@/lib/data/regions';
 
 interface TeamCardProps {
   team: Team;
@@ -47,6 +48,7 @@ export default function TeamCard({
   const avgStat = team.pokemon.length > 0 ? Math.round(totalStats / team.pokemon.length) : 0;
   const validation = getFormatBadge(team);
   const coverage = getTeamCoverage(team);
+  const teamRegion = getTeamRegion(team.pokemon);
 
   // Always show first 6 slots as preview
   const PREVIEW_SLOTS = 6;
@@ -209,6 +211,21 @@ export default function TeamCard({
             }}
           >
             ✓ {validation.format}
+          </span>
+        )}
+        {teamRegion && (
+          <span
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '0.65rem',
+              color: 'var(--ink)',
+              border: '1px solid var(--ink-muted)',
+              padding: '1px 6px',
+              background: 'rgba(0,0,0,0.03)',
+            }}
+            title={`${POKEMON_REGIONS[teamRegion].name} Region (Gen ${POKEMON_REGIONS[teamRegion].gen})`}
+          >
+            🌍 {POKEMON_REGIONS[teamRegion].name}
           </span>
         )}
       </div>

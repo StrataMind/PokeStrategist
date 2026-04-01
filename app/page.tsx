@@ -5,6 +5,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useTeamStore } from '@/lib/store/teamStore';
 import Link from 'next/link';
 import { getTeamTypeFilters } from '@/lib/utils/teamStats';
+import { getTeamRegion, POKEMON_REGIONS } from '@/lib/data/regions';
 import CommandPalette from '@/components/CommandPalette';
 import AutoSaveIndicator from '@/components/AutoSaveIndicator';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
@@ -35,6 +36,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'favorites'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [regionFilter, setRegionFilter] = useState<string>('all');
   const [focusedIndex, setFocusedIndex] = useState(0);
 
   useEffect(() => {
@@ -61,6 +63,10 @@ export default function Home() {
         !team.pokemon.some(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
     if (filterType === 'favorites' && !team.favorite) return false;
     if (typeFilter !== 'all' && !team.pokemon.some(p => p.types.includes(typeFilter))) return false;
+    if (regionFilter !== 'all') {
+      const teamRegion = getTeamRegion(team.pokemon);
+      if (teamRegion !== regionFilter) return false;
+    }
     return true;
   });
 
@@ -180,6 +186,18 @@ export default function Home() {
                 <select value={filterType} onChange={(e) => setFilterType(e.target.value as any)} style={{ appearance: 'none', background: 'white', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', padding: '0.45rem 2rem 0.45rem 0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', outline: 'none', cursor: 'pointer' }}>
                   <option value="all">All Teams</option>
                   <option value="favorites">Favorites</option>
+                </select>
+                <span style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.6rem', color: 'var(--ink-muted)', pointerEvents: 'none' }}>▼</span>
+              </div>
+
+              <div style={{ position: 'relative' }}>
+                <select value={regionFilter} onChange={(e) => setRegionFilter(e.target.value)} style={{ appearance: 'none', background: 'white', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', padding: '0.45rem 2rem 0.45rem 0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink)', outline: 'none', cursor: 'pointer' }}>
+                  <option value="all">All Regions</option>
+                  {Object.entries(POKEMON_REGIONS).map(([key, data]) => (
+                    <option key={key} value={key}>
+                      {data.name} (Gen {data.gen})
+                    </option>
+                  ))}
                 </select>
                 <span style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.6rem', color: 'var(--ink-muted)', pointerEvents: 'none' }}>▼</span>
               </div>
