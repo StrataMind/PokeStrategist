@@ -26,6 +26,8 @@ export default function Pokedex() {
   const [selectedPokemon, setSelectedPokemon] = useState<string | null>(null);
   const [teams, setTeams] = useState<any[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [itemsPerPage] = useState(100);
 
   const regions = [
     { name: 'all', label: 'All Regions', range: [1, 10000] },
@@ -63,71 +65,102 @@ export default function Pokedex() {
   useEffect(() => {
     const fetchPokemon = async () => {
       try {
-        // Fetch base Pokemon (1-1025)
-        const baseResponse = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
-        const baseData = await baseResponse.json();
+        // Check cache first
+        const cached = localStorage.getItem('pokedex_cache');
+        const cacheTime = localStorage.getItem('pokedex_cache_time');
+        const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
         
-        const basePokemon = await Promise.all(
-          baseData.results.map(async (p: any, index: number) => {
-            try {
-              const res = await fetch(p.url);
-              const details = await res.json();
-              return {
-                id: index + 1,
-                name: details.name,
-                sprite: details.sprites.front_default || details.sprites.other?.['official-artwork']?.front_default || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png',
-                types: details.types.map((t: any) => t.type.name),
-                isVariant: false
-              };
-            } catch {
-              return null;
-            }
-          })
-        );
-
-        // Fetch variants (forms, megas, regional) - only real ones from PokeAPI
-        const variantResponse = await fetch('https://pokeapi.co/api/v2/pokemon?limit=325&offset=1025');
-        const variantData = await variantResponse.json();
+        if (cached && cacheTime && Date.now() - parseInt(cacheTime) < ONE_WEEK) {
+          const cachedData = JSON.parse(cached);
+          setPokemon(cachedData);
+          setFilteredPokemon(cachedData);
+          setLoading(false);
+          return;
+        }
         
-        const variants = await Promise.all(
-          variantData.results.map(async (p: any) => {
-            try {
-              const res = await fetch(p.url);
-              const details = await res.json();
-              
-              // Extract base Pokemon ID from species URL
-              const speciesRes = await fetch(details.species.url);
-              const speciesData = await speciesRes.json();
-              const baseId = speciesData.id;
-              
-              return {
-                id: baseId,
-                name: details.name,
-                sprite: details.sprites.front_default || details.sprites.other?.['official-artwork']?.front_default || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png',
-                types: details.types.map((t: any) => t.type.name),
-                isVariant: true
-              };
-            } catch {
-              return null;
-            }
-          })
-        );
+        // Generate Pokemon list without fetching details (use ID-based sprites)
+        const allPokemon: PokemonEntry[] = [];
         
-        const allPokemon = [...basePokemon.filter(p => p !== null), ...variants.filter(p => p !== null)] as PokemonEntry[];
+        // Base Pokemon (1-1025) - use known data
+        for (let i = 1; i <= 1025; i++) {
+          allPokemon.push({
+            id: i,
+            name: '', // Will be fetched on demand
+            sprite: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${i}.png`,
+            types: [], // Will be loaded on demand
+            isVariant: false
+          });
+        }
         
-        // Sort by ID, then by name (variants after base)
-        allPokemon.sort((a, b) => {
-          if (a.id !== b.id) return a.id - b.id;
-          if (!a.isVariant && b.isVariant) return -1;
-          if (a.isVariant && !b.isVariant) return 1;
-          return a.name.localeCompare(b.name);
+        // Quick load: Fetch only names (fast endpoint)
+        const nameResponse = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+        const nameData = await nameResponse.json();
+        
+        nameData.results.forEach((p: any, index: number) => {
+          allPokemon[index].name = p.name;
         });
+        
+        // Cache the data
+        localStorage.setItem('pokedex_cache', JSON.stringify(allPokemon));
+        localStorage.setItem('pokedex_cache_time', Date.now().toString());
         
         setPokemon(allPokemon);
         setFilteredPokemon(allPokemon);
         setLoading(false);
+        
+        // Load types in background (non-blocking)
+        fetchTypesInBackground(allPokemon);
       } catch (error) {
+        console.error('Failed to load Pokedex:', error);
         setLoading(false);
+      }
+    };
+
+    const fetchTypesInBackground = async (pokemonList: PokemonEntry[]) => {
+      // Load types from cache if available
+      const typesCache = localStorage.getItem('pokemon_types_cache');
+      if (typesCache) {
+        const types = JSON.parse(typesCache);
+        const updated = pokemonList.map(p => ({
+          ...p,
+          types: types[p.id] || []
+        }));
+        setPokemon(updated);
+        setFilteredPokemon(updated);
+        return;
+      }
+      
+      // Fetch types in batches of 100 (non-blocking)
+      const batchSize = 100;
+      const typesMap: Record<number, string[]> = {};
+      
+      for (let i = 0; i < Math.min(pokemonList.length, 1025); i += batchSize) {
+        const batch = pokemonList.slice(i, i + batchSize);
+        const promises = batch.map(async (p) => {
+          try {
+            const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${p.id}`);
+            const data = await res.json();
+            typesMap[p.id] = data.types.map((t: any) => t.type.name);
+          } catch {
+            typesMap[p.id] = [];
+          }
+        });
+        
+        await Promise.all(promises);
+        
+        // Update state after each batch
+        const updated = pokemonList.map(p => ({
+          ...p,
+          types: typesMap[p.id] || p.types
+        }));
+        setPokemon(updated);
+        setFilteredPokemon(updated);
+        
+        // Cache progress
+        localStorage.setItem('pokemon_types_cache', JSON.stringify(typesMap));
+        
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     };
 
@@ -162,6 +195,7 @@ export default function Pokedex() {
     }
 
     setFilteredPokemon(filtered);
+    setPage(1); // Reset to first page when filters change
   }, [searchQuery, typeFilter, regionFilter, formFilter, pokemon]);
 
   const handleAddToTeam = (pokemonName: string) => {
@@ -223,16 +257,32 @@ export default function Pokedex() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', fontFamily: "'Libre Baskerville', Georgia, serif" }}>
-      <header style={{ height: '64px', background: 'var(--parchment)', borderBottom: '2px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 2rem', gap: '1rem' }}>
-        <Link href="/" style={{ color: 'var(--ink-muted)', textDecoration: 'none' }}>
-          <ArrowLeft size={20} />
-        </Link>
-        <div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', fontWeight: 700, color: 'var(--ink)' }}>Pokédex</h1>
-          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', color: 'var(--ink-muted)', letterSpacing: '0.1em' }}>
-            {filteredPokemon.length} Pokémon
-          </p>
+      <header style={{ height: '64px', background: 'var(--parchment)', borderBottom: '2px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 2rem', gap: '1rem', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <Link href="/" style={{ color: 'var(--ink-muted)', textDecoration: 'none' }}>
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', fontWeight: 700, color: 'var(--ink)' }}>Pokédex</h1>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', color: 'var(--ink-muted)', letterSpacing: '0.1em' }}>
+              {filteredPokemon.length} Pokémon
+            </p>
+          </div>
         </div>
+        {!loading && (
+          <button
+            onClick={() => {
+              localStorage.removeItem('pokedex_cache');
+              localStorage.removeItem('pokedex_cache_time');
+              localStorage.removeItem('pokemon_types_cache');
+              window.location.reload();
+            }}
+            style={{ padding: '0.5rem 1rem', border: '1px solid var(--border)', background: 'var(--parchment)', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', cursor: 'pointer', color: 'var(--ink-muted)' }}
+            title="Clear cache and reload"
+          >
+            ⟳ Refresh Data
+          </button>
+        )}
       </header>
 
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
@@ -279,31 +329,64 @@ export default function Pokedex() {
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '4rem', fontFamily: "'DM Mono', monospace", color: 'var(--ink-muted)' }}>
-            Loading Pokédex...
+            <div style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>⚡ Loading Pokédex...</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
+              Loading {pokemon.length} Pokémon
+            </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.5rem' }}>
-            {filteredPokemon.map(p => (
-              <Link href={`/pokedex/${p.name}`} key={p.id + p.name} style={{ textDecoration: 'none', color: 'inherit' }}>
-                <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: p.isVariant ? '4px solid #3A6EA5' : '4px solid var(--gold)', padding: '1rem', boxShadow: '4px 4px 0 var(--border)', transition: 'transform 0.2s', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: 'var(--ink-muted)', marginBottom: '0.5rem' }}>
-                      #{String(p.id).padStart(4, '0')}{p.isVariant && <span style={{ color: '#3A6EA5', marginLeft: '0.25rem' }}>VARIANT</span>}
-                    </div>
-                    <img src={p.sprite} alt={p.name} style={{ width: '96px', height: '96px', margin: '0 auto', imageRendering: 'pixelated' }} />
-                    <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, textTransform: 'capitalize', marginTop: '0.5rem', marginBottom: '0.5rem' }}>{p.name}</h3>
-                    <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                      {p.types.map(type => (
-                        <span key={type} style={{ fontSize: '0.65rem', padding: '2px 8px', background: '#3A6EA5', color: 'white', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
-                          {type}
-                        </span>
-                      ))}
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.5rem' }}>
+              {filteredPokemon.slice((page - 1) * itemsPerPage, page * itemsPerPage).map(p => (
+                <Link href={`/pokedex/${p.name}`} key={p.id + p.name} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: p.isVariant ? '4px solid #3A6EA5' : '4px solid var(--gold)', padding: '1rem', boxShadow: '4px 4px 0 var(--border)', transition: 'transform 0.2s', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: 'var(--ink-muted)', marginBottom: '0.5rem' }}>
+                        #{String(p.id).padStart(4, '0')}{p.isVariant && <span style={{ color: '#3A6EA5', marginLeft: '0.25rem' }}>VARIANT</span>}
+                      </div>
+                      <img src={p.sprite} alt={p.name} style={{ width: '96px', height: '96px', margin: '0 auto', imageRendering: 'pixelated' }} />
+                      <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, textTransform: 'capitalize', marginTop: '0.5rem', marginBottom: '0.5rem' }}>{p.name}</h3>
+                      <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        {p.types.length > 0 ? p.types.map(type => (
+                          <span key={type} style={{ fontSize: '0.65rem', padding: '2px 8px', background: '#3A6EA5', color: 'white', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
+                            {type}
+                          </span>
+                        )) : <span style={{ fontSize: '0.65rem', padding: '2px 8px', background: '#ccc', color: '#666', fontFamily: "'DM Mono', monospace" }}>Loading...</span>}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+            
+            {filteredPokemon.length > itemsPerPage && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '2rem', fontFamily: "'DM Mono', monospace" }}>
+                <button
+                  onClick={() => {
+                    setPage(p => Math.max(1, p - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={page === 1}
+                  style={{ padding: '0.75rem 1.5rem', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', background: page === 1 ? 'var(--border)' : 'var(--parchment)', cursor: page === 1 ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+                >
+                  ← Previous
+                </button>
+                <span style={{ color: 'var(--ink-muted)', fontSize: '0.9rem' }}>
+                  Page {page} of {Math.ceil(filteredPokemon.length / itemsPerPage)}
+                </span>
+                <button
+                  onClick={() => {
+                    setPage(p => Math.min(Math.ceil(filteredPokemon.length / itemsPerPage), p + 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={page >= Math.ceil(filteredPokemon.length / itemsPerPage)}
+                  style={{ padding: '0.75rem 1.5rem', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', background: page >= Math.ceil(filteredPokemon.length / itemsPerPage) ? 'var(--border)' : 'var(--parchment)', cursor: page >= Math.ceil(filteredPokemon.length / itemsPerPage) ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
 
