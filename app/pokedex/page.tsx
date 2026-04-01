@@ -436,8 +436,8 @@ export default function Pokedex() {
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.5rem' }}>
               {filteredPokemon.slice((page - 1) * itemsPerPage, page * itemsPerPage).map(p => (
-                <Link href={`/pokedex/${p.name}`} key={p.id + p.name} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: p.isVariant ? '4px solid #3A6EA5' : '4px solid var(--gold)', padding: '1rem', boxShadow: '4px 4px 0 var(--border)', transition: 'transform 0.2s', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                <div key={p.id + p.name} style={{ position: 'relative', background: 'var(--parchment)', border: '1px solid var(--border)', borderTop: p.isVariant ? '4px solid #3A6EA5' : '4px solid var(--gold)', padding: '1rem', boxShadow: '4px 4px 0 var(--border)', transition: 'transform 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                  <Link href={`/pokedex/${p.name}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: 'var(--ink-muted)', marginBottom: '0.5rem' }}>
                         #{String(p.id).padStart(4, '0')}{p.isVariant && <span style={{ color: '#3A6EA5', marginLeft: '0.25rem' }}>VARIANT</span>}
@@ -452,8 +452,32 @@ export default function Pokedex() {
                         )) : <span style={{ fontSize: '0.65rem', padding: '2px 8px', background: '#ccc', color: '#666', fontFamily: "'DM Mono', monospace" }}>Loading...</span>}
                       </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddToTeam(p.name);
+                    }}
+                    style={{ 
+                      marginTop: '0.75rem', 
+                      width: '100%', 
+                      padding: '0.5rem', 
+                      border: '1px solid var(--border)', 
+                      borderBottom: '2px solid var(--ink-muted)', 
+                      background: 'var(--ink)', 
+                      color: 'var(--cream)', 
+                      fontFamily: "'DM Mono', monospace", 
+                      fontSize: '0.7rem', 
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--gold)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--ink)'}
+                  >
+                    + Add to Team
+                  </button>
+                </div>
               ))}
             </div>
             
