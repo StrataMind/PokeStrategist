@@ -124,6 +124,9 @@ export default function Pokedex() {
         
         // Load remaining types in background (optimized batches)
         fetchRemainingTypes(allPokemon, data.results);
+        
+        // Load variants (Mega, Regional, Gigantamax) in background
+        fetchVariants(allPokemon);
       } catch (error) {
         console.error('Failed to load Pokedex:', error);
         setLoading(false);
@@ -183,6 +186,80 @@ export default function Pokedex() {
         
         // Small delay to avoid overwhelming the browser
         await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    };
+
+    const fetchVariants = async (basePokemon: PokemonEntry[]) => {
+      try {
+        // Fetch variants (Mega, Regional, Gigantamax) - offset 1025
+        const variantResponse = await fetch('https://pokeapi.co/api/v2/pokemon?limit=325&offset=1025');
+        const variantData = await variantResponse.json();
+        
+        // Process variants in batches
+        const batchSize = 25;
+        for (let i = 0; i < variantData.results.length; i += batchSize) {
+          const batch = variantData.results.slice(i, i + batchSize);
+          
+          const variants = await Promise.all(
+            batch.map(async (p: any) => {
+              try {
+                const res = await fetch(p.url);
+                const details = await res.json();
+                
+                // Get base Pokemon ID from species
+                const speciesRes = await fetch(details.species.url);
+                const speciesData = await speciesRes.json();
+                const baseId = speciesData.id;
+                
+                return {
+                  id: baseId,
+                  name: details.name,
+                  sprite: details.sprites.front_default || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${details.id}.png`,
+                  types: details.types.map((t: any) => t.type.name),
+                  isVariant: true
+                };
+              } catch {
+                return null;
+              }
+            })
+          );
+          
+          // Add variants to Pokemon list
+          const validVariants = variants.filter(v => v !== null) as PokemonEntry[];
+          
+          setPokemon(prev => {
+            const updated = [...prev, ...validVariants];
+            // Sort by ID, then by variant status
+            updated.sort((a, b) => {
+              if (a.id !== b.id) return a.id - b.id;
+              if (!a.isVariant && b.isVariant) return -1;
+              if (a.isVariant && !b.isVariant) return 1;
+              return a.name.localeCompare(b.name);
+            });
+            
+            // Cache with variants
+            localStorage.setItem('pokedex_cache_v2', JSON.stringify(updated));
+            localStorage.setItem('pokedex_cache_time_v2', Date.now().toString());
+            
+            return updated;
+          });
+          
+          setFilteredPokemon(prev => {
+            const updated = [...prev, ...validVariants];
+            updated.sort((a, b) => {
+              if (a.id !== b.id) return a.id - b.id;
+              if (!a.isVariant && b.isVariant) return -1;
+              if (a.isVariant && !b.isVariant) return 1;
+              return a.name.localeCompare(b.name);
+            });
+            return updated;
+          });
+          
+          // Small delay between batches
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      } catch (error) {
+        console.error('Failed to load variants:', error);
       }
     };
 
