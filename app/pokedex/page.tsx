@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Search } from 'lucide-react';
 import { getTypeColor } from '@/lib/utils';
 import Toast from '@/components/Toast';
+import { useTeamStore } from '@/lib/store/teamStore';
 
 interface PokemonEntry {
   id: number;
@@ -15,6 +16,7 @@ interface PokemonEntry {
 }
 
 export default function Pokedex() {
+  const { teams, addPokemon } = useTeamStore();
   const [pokemon, setPokemon] = useState<PokemonEntry[]>([]);
   const [filteredPokemon, setFilteredPokemon] = useState<PokemonEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,6 @@ export default function Pokedex() {
   const [formFilter, setFormFilter] = useState('all');
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [selectedPokemon, setSelectedPokemon] = useState<string | null>(null);
-  const [teams, setTeams] = useState<any[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [itemsPerPage] = useState(100);
@@ -54,13 +55,7 @@ export default function Pokedex() {
 
   const types = ['all', 'normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'];
 
-  useEffect(() => {
-    // Load teams from localStorage
-    const stored = localStorage.getItem('teams');
-    if (stored) {
-      setTeams(JSON.parse(stored));
-    }
-  }, []);
+
 
   useEffect(() => {
     const fetchPokemon = async () => {
@@ -299,22 +294,13 @@ export default function Pokedex() {
 
   const handleAddToTeam = (pokemonName: string) => {
     setSelectedPokemon(pokemonName);
-    // Reload teams from localStorage
-    const stored = localStorage.getItem('teams');
-    if (stored) {
-      setTeams(JSON.parse(stored));
-    }
     setShowTeamModal(true);
   };
 
   const addPokemonToTeam = async (teamId: string) => {
     if (!selectedPokemon) return;
     
-    const stored = localStorage.getItem('teams');
-    if (!stored) return;
-    
-    const allTeams = JSON.parse(stored);
-    const team = allTeams.find((t: any) => t.id === teamId);
+    const team = teams.find((t) => t.id === teamId);
     if (!team) return;
     
     // Check if team is full
@@ -324,34 +310,42 @@ export default function Pokedex() {
       return;
     }
     
-    // Fetch Pokemon details
-    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${selectedPokemon}`);
-    const details = await res.json();
-    
-    const newPokemon = {
-      id: details.id,
-      name: details.name,
-      sprite: details.sprites.front_default,
-      types: details.types.map((t: any) => t.type.name),
-      stats: details.stats.reduce((acc: any, s: any) => {
-        acc[s.stat.name] = s.base_stat;
-        return acc;
-      }, {}),
-      abilities: details.abilities.map((a: any) => a.ability.name),
-      moves: details.moves.slice(0, 4).map((m: any) => ({
-        name: m.move.name,
-        type: 'normal',
-        power: 50
-      }))
-    };
-    
-    team.pokemon.push(newPokemon);
-    team.updatedAt = Date.now();
-    localStorage.setItem('teams', JSON.stringify(allTeams));
-    
-    setShowTeamModal(false);
-    setSelectedPokemon(null);
-    setToast(`${details.name} added to ${team.name}!`);
+    try {
+      // Fetch Pokemon details
+      const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${selectedPokemon}`);
+      const details = await res.json();
+      
+      const newPokemon: any = {
+        id: details.id,
+        name: details.name,
+        sprite: details.sprites.front_default || details.sprites.other?.['official-artwork']?.front_default,
+        types: details.types.map((t: any) => t.type.name),
+        stats: {
+          hp: details.stats[0].base_stat,
+          attack: details.stats[1].base_stat,
+          defense: details.stats[2].base_stat,
+          'special-attack': details.stats[3].base_stat,
+          'special-defense': details.stats[4].base_stat,
+          speed: details.stats[5].base_stat,
+        },
+        ability: details.abilities[0]?.ability.name || '',
+        nature: 'hardy',
+        item: '',
+        moves: details.moves.slice(0, 4).map((m: any) => m.move.name),
+        position: team.pokemon.length,
+      };
+      
+      // Use the Zustand store method to add Pokemon
+      addPokemon(teamId, newPokemon);
+      
+      setShowTeamModal(false);
+      setSelectedPokemon(null);
+      setToast(`${details.name} added to ${team.name}!`);
+    } catch (error) {
+      console.error('Failed to add Pokemon:', error);
+      setToast('Failed to add Pokemon. Please try again.');
+      setShowTeamModal(false);
+    }
   };
 
   return (
@@ -526,12 +520,23 @@ export default function Pokedex() {
                   <button
                     key={team.id}
                     onClick={() => addPokemonToTeam(team.id)}
-                    style={{ padding: '1rem', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', background: 'var(--cream)', textAlign: 'left', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', transition: 'all 0.2s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--parchment)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--cream)'}
+                    disabled={team.pokemon.length >= team.maxSize}
+                    style={{ padding: '1rem', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', background: team.pokemon.length >= team.maxSize ? 'var(--border)' : 'var(--cream)', textAlign: 'left', cursor: team.pokemon.length >= team.maxSize ? 'not-allowed' : 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', transition: 'all 0.2s', opacity: team.pokemon.length >= team.maxSize ? 0.5 : 1 }}
+                    onMouseEnter={(e) => {
+                      if (team.pokemon.length < team.maxSize) {
+                        e.currentTarget.style.background = 'var(--parchment)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (team.pokemon.length < team.maxSize) {
+                        e.currentTarget.style.background = 'var(--cream)';
+                      }
+                    }}
                   >
                     <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{team.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>{team.pokemon.length}/{team.maxSize} Pokémon</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>
+                      {team.pokemon.length}/{team.maxSize} Pokémon {team.pokemon.length >= team.maxSize && '(Full)'}
+                    </div>
                   </button>
                 ))}
               </div>
