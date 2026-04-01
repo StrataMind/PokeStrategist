@@ -66,8 +66,8 @@ export default function Pokedex() {
     const fetchPokemon = async () => {
       try {
         // Check cache first
-        const cached = localStorage.getItem('pokedex_cache');
-        const cacheTime = localStorage.getItem('pokedex_cache_time');
+        const cached = localStorage.getItem('pokedex_cache_v2');
+        const cacheTime = localStorage.getItem('pokedex_cache_time_v2');
         const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
         
         if (cached && cacheTime && Date.now() - parseInt(cacheTime) < ONE_WEEK) {
@@ -78,89 +78,111 @@ export default function Pokedex() {
           return;
         }
         
-        // Generate Pokemon list without fetching details (use ID-based sprites)
-        const allPokemon: PokemonEntry[] = [];
+        // Fetch Pokemon list with types in ONE call (much faster!)
+        const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+        const data = await response.json();
         
-        // Base Pokemon (1-1025) - use known data
-        for (let i = 1; i <= 1025; i++) {
-          allPokemon.push({
-            id: i,
-            name: '', // Will be fetched on demand
-            sprite: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${i}.png`,
-            types: [], // Will be loaded on demand
-            isVariant: false
-          });
-        }
+        // Fetch only first 100 Pokemon details immediately for instant display
+        const quickBatch = await Promise.all(
+          data.results.slice(0, 100).map(async (p: any, index: number) => {
+            try {
+              const res = await fetch(p.url);
+              const details = await res.json();
+              return {
+                id: index + 1,
+                name: details.name,
+                sprite: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${index + 1}.png`,
+                types: details.types.map((t: any) => t.type.name),
+                isVariant: false
+              };
+            } catch {
+              return {
+                id: index + 1,
+                name: p.name,
+                sprite: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${index + 1}.png`,
+                types: [],
+                isVariant: false
+              };
+            }
+          })
+        );
         
-        // Quick load: Fetch only names (fast endpoint)
-        const nameResponse = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
-        const nameData = await nameResponse.json();
+        // Create remaining Pokemon with just names/sprites (no types yet)
+        const remaining = data.results.slice(100).map((p: any, index: number) => ({
+          id: index + 101,
+          name: p.name,
+          sprite: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${index + 101}.png`,
+          types: [],
+          isVariant: false
+        }));
         
-        nameData.results.forEach((p: any, index: number) => {
-          allPokemon[index].name = p.name;
-        });
-        
-        // Cache the data
-        localStorage.setItem('pokedex_cache', JSON.stringify(allPokemon));
-        localStorage.setItem('pokedex_cache_time', Date.now().toString());
+        const allPokemon = [...quickBatch, ...remaining];
         
         setPokemon(allPokemon);
         setFilteredPokemon(allPokemon);
         setLoading(false);
         
-        // Load types in background (non-blocking)
-        fetchTypesInBackground(allPokemon);
+        // Load remaining types in background (optimized batches)
+        fetchRemainingTypes(allPokemon, data.results);
       } catch (error) {
         console.error('Failed to load Pokedex:', error);
         setLoading(false);
       }
     };
 
-    const fetchTypesInBackground = async (pokemonList: PokemonEntry[]) => {
-      // Load types from cache if available
-      const typesCache = localStorage.getItem('pokemon_types_cache');
-      if (typesCache) {
-        const types = JSON.parse(typesCache);
-        const updated = pokemonList.map(p => ({
-          ...p,
-          types: types[p.id] || []
-        }));
-        setPokemon(updated);
-        setFilteredPokemon(updated);
-        return;
-      }
+    const fetchRemainingTypes = async (pokemonList: PokemonEntry[], apiResults: any[]) => {
+      const batchSize = 50; // Smaller batches for better progress feedback
       
-      // Fetch types in batches of 100 (non-blocking)
-      const batchSize = 100;
-      const typesMap: Record<number, string[]> = {};
-      
-      for (let i = 0; i < Math.min(pokemonList.length, 1025); i += batchSize) {
-        const batch = pokemonList.slice(i, i + batchSize);
-        const promises = batch.map(async (p) => {
-          try {
-            const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${p.id}`);
-            const data = await res.json();
-            typesMap[p.id] = data.types.map((t: any) => t.type.name);
-          } catch {
-            typesMap[p.id] = [];
-          }
+      for (let i = 100; i < Math.min(pokemonList.length, 1025); i += batchSize) {
+        const batch = apiResults.slice(i, i + batchSize);
+        
+        const updates = await Promise.all(
+          batch.map(async (p: any, batchIndex: number) => {
+            const id = i + batchIndex + 1;
+            try {
+              const res = await fetch(p.url);
+              const details = await res.json();
+              return {
+                id,
+                types: details.types.map((t: any) => t.type.name)
+              };
+            } catch {
+              return { id, types: [] };
+            }
+          })
+        );
+        
+        // Update Pokemon list with new types
+        setPokemon(prev => {
+          const updated = [...prev];
+          updates.forEach(({ id, types }) => {
+            const index = updated.findIndex(p => p.id === id);
+            if (index !== -1) {
+              updated[index] = { ...updated[index], types };
+            }
+          });
+          
+          // Cache complete data
+          localStorage.setItem('pokedex_cache_v2', JSON.stringify(updated));
+          localStorage.setItem('pokedex_cache_time_v2', Date.now().toString());
+          
+          return updated;
         });
         
-        await Promise.all(promises);
+        // Also update filtered list
+        setFilteredPokemon(prev => {
+          const updated = [...prev];
+          updates.forEach(({ id, types }) => {
+            const index = updated.findIndex(p => p.id === id);
+            if (index !== -1) {
+              updated[index] = { ...updated[index], types };
+            }
+          });
+          return updated;
+        });
         
-        // Update state after each batch
-        const updated = pokemonList.map(p => ({
-          ...p,
-          types: typesMap[p.id] || p.types
-        }));
-        setPokemon(updated);
-        setFilteredPokemon(updated);
-        
-        // Cache progress
-        localStorage.setItem('pokemon_types_cache', JSON.stringify(typesMap));
-        
-        // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Small delay to avoid overwhelming the browser
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
     };
 
@@ -272,9 +294,8 @@ export default function Pokedex() {
         {!loading && (
           <button
             onClick={() => {
-              localStorage.removeItem('pokedex_cache');
-              localStorage.removeItem('pokedex_cache_time');
-              localStorage.removeItem('pokemon_types_cache');
+              localStorage.removeItem('pokedex_cache_v2');
+              localStorage.removeItem('pokedex_cache_time_v2');
               window.location.reload();
             }}
             style={{ padding: '0.5rem 1rem', border: '1px solid var(--border)', background: 'var(--parchment)', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', cursor: 'pointer', color: 'var(--ink-muted)' }}
