@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Team } from '@/types/team';
 import PokemonHoverPreview from '@/components/PokemonHoverPreview';
 import { getFormatBadge } from '@/lib/utils/validator';
@@ -34,10 +35,10 @@ export default function TeamCard({
   onDuplicate,
   onExportJSON,
 }: TeamCardProps) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   const totalStats = team.pokemon.reduce(
     (sum, p) => sum + Object.values(p.stats).reduce((a, b) => a + b, 0),
@@ -47,10 +48,27 @@ export default function TeamCard({
   const validation = getFormatBadge(team);
   const coverage = getTeamCoverage(team);
 
-  // Preview logic: show first 6 slots when collapsed
+  // Always show first 6 slots as preview
   const PREVIEW_SLOTS = 6;
-  const slotsToShow = isExpanded ? team.maxSize : Math.min(PREVIEW_SLOTS, team.maxSize);
+  const slotsToShow = Math.min(PREVIEW_SLOTS, team.maxSize);
   const hiddenSlotsCount = team.maxSize - slotsToShow;
+
+  // Navigate to team editor when card is clicked
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'A' ||
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('input')
+    ) {
+      return;
+    }
+    router.push(`/team/${team.id}`);
+  };
 
   const handleRename = () => {
     if (editingName.trim()) {
@@ -62,6 +80,7 @@ export default function TeamCard({
 
   return (
     <div
+      onClick={handleCardClick}
       style={{
         background: 'var(--parchment)',
         border: `1px solid ${isFocused ? 'var(--gold)' : 'var(--border)'}`,
@@ -69,6 +88,16 @@ export default function TeamCard({
         boxShadow: isFocused ? '4px 4px 0 var(--gold-dark)' : '4px 4px 0 var(--border)',
         display: 'flex',
         flexDirection: 'column',
+        cursor: 'pointer',
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = isFocused ? '6px 6px 0 var(--gold-dark)' : '6px 6px 0 var(--border)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = isFocused ? '4px 4px 0 var(--gold-dark)' : '4px 4px 0 var(--border)';
       }}
     >
       {/* Header row */}
@@ -204,17 +233,14 @@ export default function TeamCard({
         </div>
       )}
 
-      {/* Pokemon grid */}
+      {/* Pokemon grid - preview only */}
       <div 
         style={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(3, 1fr)', 
           gap: '1px', 
           background: 'var(--border)',
-          cursor: hiddenSlotsCount > 0 ? 'pointer' : 'default',
         }}
-        onClick={() => hiddenSlotsCount > 0 && setIsExpanded(!isExpanded)}
-        title={hiddenSlotsCount > 0 ? (isExpanded ? 'Click to collapse' : `Click to view all ${team.maxSize} slots`) : ''}
       >
         {Array.from({ length: slotsToShow }).map((_, i) => (
           <div
@@ -244,8 +270,8 @@ export default function TeamCard({
             )}
           </div>
         ))}
-        {/* Show "+X more" indicator in the last slot when collapsed */}
-        {!isExpanded && hiddenSlotsCount > 0 && (
+        {/* Show "+X more" indicator for hidden slots */}
+        {hiddenSlotsCount > 0 && (
           <div
             style={{
               background: 'var(--parchment)',
@@ -267,8 +293,11 @@ export default function TeamCard({
 
       {/* Action buttons */}
       <div style={{ padding: '0.85rem 1.25rem', display: 'flex', gap: '0.6rem', position: 'relative' }}>
-        <Link
-          href={`/team/${team.id}`}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/team/${team.id}`);
+          }}
           style={{
             flex: 1,
             background: 'var(--ink)',
@@ -281,14 +310,15 @@ export default function TeamCard({
             cursor: 'pointer',
             boxShadow: '2px 2px 0 var(--gold-dark)',
             textAlign: 'center',
-            textDecoration: 'none',
-            display: 'block',
           }}
         >
           EDIT
-        </Link>
-        <Link
-          href={`/battle/${team.id}`}
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/battle/${team.id}`);
+          }}
           style={{
             flex: 1,
             background: 'white',
@@ -300,14 +330,15 @@ export default function TeamCard({
             letterSpacing: '0.1em',
             cursor: 'pointer',
             textAlign: 'center',
-            textDecoration: 'none',
-            display: 'block',
           }}
         >
           BATTLE
-        </Link>
+        </button>
         <button
-          onClick={() => exportTeamAsImage(team)}
+          onClick={(e) => {
+            e.stopPropagation();
+            exportTeamAsImage(team);
+          }}
           style={{ background: 'white', border: '1px solid var(--border)', color: 'var(--ink-muted)', padding: '0.5rem 0.75rem', cursor: 'pointer' }}
           title="Export as Image"
         >
@@ -317,7 +348,10 @@ export default function TeamCard({
         {/* Dropdown */}
         <div style={{ position: 'relative' }}>
           <button
-            onClick={() => setIsDropdownOpen((o) => !o)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDropdownOpen((o) => !o);
+            }}
             style={{
               background: 'white',
               border: '1px solid var(--border)',
