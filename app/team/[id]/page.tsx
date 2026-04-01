@@ -9,6 +9,7 @@ import { ArrowLeft, Search, X, Settings, Filter, Shuffle } from 'lucide-react';
 import Link from 'next/link';
 import { getTypeColor } from '@/lib/utils';
 import { NATURES, POPULAR_ITEMS } from '@/lib/data/gameData';
+import { getPokemonRegion, POKEMON_REGIONS, Region } from '@/lib/data/regions';
 
 export default function TeamEditor() {
   const params = useParams();
@@ -195,75 +196,126 @@ export default function TeamEditor() {
             </button>
           )}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
-          {Array.from({ length: team.maxSize }).map((_, i) => {
-            const pokemon = team.pokemon.find(p => p.position === i);
-            if (filterType && pokemon && !pokemon.types.includes(filterType)) return null;
+
+        {/* Group Pokemon by Region */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginBottom: '1.5rem' }}>
+          {Object.entries(POKEMON_REGIONS).map(([regionKey, regionData]) => {
+            // Get all Pokemon slots for this region
+            const regionSlots: Array<{ pokemon: TeamPokemon | undefined; position: number }> = [];
+            
+            for (let i = 0; i < team.maxSize; i++) {
+              const pokemon = team.pokemon.find(p => p.position === i);
+              if (pokemon) {
+                const pokemonRegion = getPokemonRegion(pokemon.id);
+                if (pokemonRegion === regionKey) {
+                  regionSlots.push({ pokemon, position: i });
+                }
+              } else {
+                // Check if this is an empty slot we should show in this region
+                // For now, we'll add empty slots at the end of each region proportionally
+                const emptySlotRegion = i % Object.keys(POKEMON_REGIONS).length;
+                const regionIndex = Object.keys(POKEMON_REGIONS).indexOf(regionKey);
+                if (emptySlotRegion === regionIndex && regionSlots.length < Math.ceil(team.maxSize / Object.keys(POKEMON_REGIONS).length)) {
+                  regionSlots.push({ pokemon: undefined, position: i });
+                }
+              }
+            }
+
+            // Skip regions with no Pokemon
+            if (regionSlots.length === 0) return null;
+
             return (
-              <div
-                key={i}
-                draggable={!!pokemon}
-                onDragStart={() => pokemon && handleDragStart(i)}
-                onDragOver={(e) => handleDragOver(e, i)}
-                onDragEnd={handleDragEnd}
-                style={{ background: 'var(--parchment)', border: pokemon ? '1px solid var(--border)' : '2px dashed var(--border)', borderTop: pokemon ? '4px solid var(--gold)' : 'none', boxShadow: pokemon ? '4px 4px 0 var(--border)' : 'none', cursor: pokemon ? 'move' : 'pointer', transition: 'all 0.15s' }}
-              >
-                {pokemon ? (
+              <div key={regionKey} style={{ background: 'white', border: '2px solid var(--border)', borderRadius: '8px', padding: '1.5rem' }}>
+                {/* Region Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', paddingBottom: '0.75rem', borderBottom: '2px solid var(--border)' }}>
+                  <span style={{ fontSize: '1.5rem' }}>🌍</span>
                   <div>
-                    <div style={{ position: 'relative', padding: '1rem' }}>
-                      <img 
-                        src={pokemon.sprite} 
-                        alt={pokemon.name} 
-                        style={{ width: '100%', height: '128px', objectFit: 'contain', cursor: 'pointer', imageRendering: 'pixelated' }}
-                        onClick={() => setViewingPokemon(pokemon)}
-                      />
-                      <button
-                        onClick={() => removePokemon(team.id, i)}
-                        style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'var(--red)', color: 'white', border: 'none', padding: '0.25rem', cursor: 'pointer' }}
-                      >
-                        <X size={14} />
-                      </button>
-                      <button
-                        onClick={() => setEditingPokemon(pokemon)}
-                        style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', background: 'var(--ink)', border: '1px solid var(--gold)', color: 'var(--gold)', padding: '0.25rem', cursor: 'pointer' }}
-                      >
-                        <Settings size={14} />
-                      </button>
-                    </div>
-                    <div style={{ padding: '0 1rem 1rem' }}>
-                      <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, textAlign: 'center', textTransform: 'capitalize', marginBottom: '0.5rem' }}>
-                        {pokemon.nickname || pokemon.name}
-                      </h3>
-                      <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', marginBottom: '0.5rem' }}>
-                        {pokemon.types.map(type => (
-                          <span key={type} style={{ fontSize: '0.65rem', padding: '2px 8px', background: getTypeColor(type).replace('bg-', ''), color: 'white', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
-                            {type}
-                          </span>
-                        ))}
-                      </div>
-                      {pokemon.nature && (
-                        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', textAlign: 'center', color: 'var(--ink-muted)', marginBottom: '0.25rem' }}>{pokemon.nature} Nature</p>
-                      )}
-                      {pokemon.item && (
-                        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', textAlign: 'center', color: 'var(--ink-muted)' }}>@ {pokemon.item}</p>
-                      )}
-                      {pokemon.selectedMoves && pokemon.selectedMoves.length > 0 && (
-                        <div style={{ marginTop: '0.75rem', fontSize: '0.7rem', color: 'var(--ink-muted)', fontFamily: "'DM Mono', monospace" }}>
-                          {pokemon.selectedMoves.map(move => (
-                            <div key={move} style={{ textTransform: 'capitalize', marginBottom: '2px' }}>• {move.replace('-', ' ')}</div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
+                      {regionData.name}
+                    </h3>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: 'var(--ink-muted)', margin: 0 }}>
+                      Generation {regionData.gen} • #{regionData.range[0]}-{regionData.range[1]}
+                    </p>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setShowSearch(true)}
-                    style={{ width: '100%', height: '100%', minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--border)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '3rem' }}
-                  >
-                    +
-                  </button>
-                )}
+                  <div style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--ink-muted)' }}>
+                    {regionSlots.filter(s => s.pokemon).length} Pokémon
+                  </div>
+                </div>
+
+                {/* Pokemon Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem' }}>
+                  {regionSlots.map(({ pokemon, position }) => {
+                    if (filterType && pokemon && !pokemon.types.includes(filterType)) return null;
+                    return (
+                      <div
+                        key={position}
+                        draggable={!!pokemon}
+                        onDragStart={() => pokemon && handleDragStart(position)}
+                        onDragOver={(e) => handleDragOver(e, position)}
+                        onDragEnd={handleDragEnd}
+                        style={{ 
+                          background: 'var(--parchment)', 
+                          border: pokemon ? '1px solid var(--border)' : '2px dashed var(--border)', 
+                          borderTop: pokemon ? '3px solid var(--gold)' : 'none', 
+                          boxShadow: pokemon ? '2px 2px 0 var(--border)' : 'none', 
+                          cursor: pokemon ? 'move' : 'pointer', 
+                          transition: 'all 0.15s',
+                          borderRadius: '4px'
+                        }}
+                      >
+                        {pokemon ? (
+                          <div>
+                            <div style={{ position: 'relative', padding: '0.75rem' }}>
+                              <img 
+                                src={pokemon.sprite} 
+                                alt={pokemon.name} 
+                                style={{ width: '100%', height: '96px', objectFit: 'contain', cursor: 'pointer', imageRendering: 'pixelated' }}
+                                onClick={() => setViewingPokemon(pokemon)}
+                              />
+                              <button
+                                onClick={() => removePokemon(team.id, position)}
+                                style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'var(--red)', color: 'white', border: 'none', padding: '0.25rem', cursor: 'pointer', borderRadius: '2px' }}
+                              >
+                                <X size={12} />
+                              </button>
+                              <button
+                                onClick={() => setEditingPokemon(pokemon)}
+                                style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', background: 'var(--ink)', border: '1px solid var(--gold)', color: 'var(--gold)', padding: '0.25rem', cursor: 'pointer', borderRadius: '2px' }}
+                              >
+                                <Settings size={12} />
+                              </button>
+                            </div>
+                            <div style={{ padding: '0 0.75rem 0.75rem' }}>
+                              <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.9rem', fontWeight: 700, textAlign: 'center', textTransform: 'capitalize', marginBottom: '0.4rem' }}>
+                                {pokemon.nickname || pokemon.name}
+                              </h4>
+                              <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                                {pokemon.types.map(type => (
+                                  <span key={type} style={{ fontSize: '0.6rem', padding: '2px 6px', background: getTypeColor(type).replace('bg-', ''), color: 'white', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace", borderRadius: '2px' }}>
+                                    {type}
+                                  </span>
+                                ))}
+                              </div>
+                              {pokemon.nature && (
+                                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.65rem', textAlign: 'center', color: 'var(--ink-muted)', marginBottom: '0.2rem' }}>{pokemon.nature} Nature</p>
+                              )}
+                              {pokemon.item && (
+                                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.65rem', textAlign: 'center', color: 'var(--ink-muted)' }}>@ {pokemon.item}</p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setShowSearch(true)}
+                            style={{ width: '100%', height: '100%', minHeight: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--border)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '2rem', borderRadius: '4px' }}
+                          >
+                            +
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
