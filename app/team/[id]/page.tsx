@@ -5,16 +5,19 @@ import { useParams, useRouter } from 'next/navigation';
 import { useTeamStore } from '@/lib/store/teamStore';
 import { searchPokemon } from '@/lib/api/pokeapi';
 import { Pokemon, TeamPokemon } from '@/types/pokemon';
-import { ArrowLeft, Search, X, Settings, Filter, Shuffle } from 'lucide-react';
+import { ArrowLeft, Search, X, Settings, Filter, Shuffle, Grid3x3, List } from 'lucide-react';
 import Link from 'next/link';
 import { getTypeColor } from '@/lib/utils';
 import { NATURES, POPULAR_ITEMS } from '@/lib/data/gameData';
 import { getPokemonRegion, POKEMON_REGIONS, Region } from '@/lib/data/regions';
+import { useIsMobile } from '@/lib/hooks/useIsMobile';
 
 export default function TeamEditor() {
   const params = useParams();
   const router = useRouter();
   const { teams, setCurrentTeam, addPokemon, removePokemon, reorderPokemon, updatePokemon } = useTeamStore();
+  const isMobile = useIsMobile();
+  
   const [team, setTeam] = useState(teams.find(t => t.id === params.id));
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,6 +32,7 @@ export default function TeamEditor() {
   const [selectedItem, setSelectedItem] = useState('');
   const [selectedMoves, setSelectedMoves] = useState<string[]>([]);
   const [filterType, setFilterType] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'regions' | 'grid'>('regions');
 
   const handleRandomTeam = async () => {
     if (team && team.pokemon.length < team.maxSize) {
@@ -197,8 +201,10 @@ export default function TeamEditor() {
           )}
         </div>
 
-        {/* Group Pokemon by Region */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginBottom: '1.5rem' }}>
+        {/* Region-based or Grid View */}
+        {(viewMode === 'regions' && !isMobile) ? (
+          /* Group Pokemon by Region */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginBottom: '1.5rem' }}>
           {Object.entries(POKEMON_REGIONS).map(([regionKey, regionData]) => {
             // Get all Pokemon slots for this region
             const regionSlots: Array<{ pokemon: TeamPokemon | undefined; position: number }> = [];
@@ -320,6 +326,83 @@ export default function TeamEditor() {
             );
           })}
         </div>
+        ) : (
+          /* Grid View - Simple responsive grid (mobile-friendly) */
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+            {Array.from({ length: team.maxSize }).map((_, i) => {
+              const pokemon = team.pokemon.find(p => p.position === i);
+              if (filterType && pokemon && !pokemon.types.includes(filterType)) return null;
+              return (
+                <div
+                  key={i}
+                  draggable={!!pokemon}
+                  onDragStart={() => pokemon && handleDragStart(i)}
+                  onDragOver={(e) => handleDragOver(e, i)}
+                  onDragEnd={handleDragEnd}
+                  style={{ 
+                    background: 'var(--parchment)', 
+                    border: pokemon ? '1px solid var(--border)' : '2px dashed var(--border)', 
+                    borderTop: pokemon ? '3px solid var(--gold)' : 'none', 
+                    boxShadow: pokemon ? '2px 2px 0 var(--border)' : 'none', 
+                    cursor: pokemon ? 'move' : 'pointer', 
+                    transition: 'all 0.15s',
+                    borderRadius: '4px'
+                  }}
+                >
+                  {pokemon ? (
+                    <div>
+                      <div style={{ position: 'relative', padding: '0.75rem' }}>
+                        <img 
+                          src={pokemon.sprite} 
+                          alt={pokemon.name} 
+                          style={{ width: '100%', height: '96px', objectFit: 'contain', cursor: 'pointer', imageRendering: 'pixelated' }}
+                          onClick={() => setViewingPokemon(pokemon)}
+                        />
+                        <button
+                          onClick={() => removePokemon(team.id, i)}
+                          style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'var(--red)', color: 'white', border: 'none', padding: '0.25rem', cursor: 'pointer', borderRadius: '2px' }}
+                        >
+                          <X size={12} />
+                        </button>
+                        <button
+                          onClick={() => setEditingPokemon(pokemon)}
+                          style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', background: 'var(--ink)', border: '1px solid var(--gold)', color: 'var(--gold)', padding: '0.25rem', cursor: 'pointer', borderRadius: '2px' }}
+                        >
+                          <Settings size={12} />
+                        </button>
+                      </div>
+                      <div style={{ padding: '0 0.75rem 0.75rem' }}>
+                        <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.9rem', fontWeight: 700, textAlign: 'center', textTransform: 'capitalize', marginBottom: '0.4rem' }}>
+                          {pokemon.nickname || pokemon.name}
+                        </h4>
+                        <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                          {pokemon.types.map(type => (
+                            <span key={type} style={{ fontSize: '0.6rem', padding: '2px 6px', background: getTypeColor(type).replace('bg-', ''), color: 'white', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace", borderRadius: '2px' }}>
+                              {type}
+                            </span>
+                          ))}
+                        </div>
+                        {pokemon.nature && (
+                          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.65rem', textAlign: 'center', color: 'var(--ink-muted)', marginBottom: '0.2rem' }}>{pokemon.nature} Nature</p>
+                        )}
+                        {pokemon.item && (
+                          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.65rem', textAlign: 'center', color: 'var(--ink-muted)' }}>@ {pokemon.item}</p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowSearch(true)}
+                      style={{ width: '100%', height: '100%', minHeight: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--border)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '2rem', borderRadius: '4px' }}
+                    >
+                      +
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {showSearch && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 50 }}>
