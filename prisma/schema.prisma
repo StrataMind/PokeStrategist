@@ -3,22 +3,20 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  username      String    @unique
-  password      String?
-  avatar        String?
-  bio           String?
-  favoriteIds   Int[]
-  teams         Team[]
-  accounts      Account[]
-  sessions      Session[]
-  createdAt     DateTime  @default(now())
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  teams     Team[]
+  accounts  Account[]
+  sessions  Session[]
+  createdAt DateTime @default(now())
 }
 
 model Account {
@@ -47,32 +45,23 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Team {
-  id          String        @id @default(cuid())
-  name        String
-  description String?
-  maxSize     Int           @default(6)
-  isPublic    Boolean       @default(false)
-  format      String?
-  pokemon     TeamPokemon[]
-  userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
-model TeamPokemon {
-  id        String   @id @default(cuid())
-  teamId    String
-  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  pokemonId Int
-  nickname  String?
-  position  Int
-  moves     String[]
-  ability   String?
-  item      String?
-  nature    String?
-  isShiny   Boolean  @default(false)
-  evs       Json?
-  ivs       Json?
+// Stores a full serialized Team (including all Pokémon data) as JSON.
+// The id matches the client-generated localStorage id so the same id
+// works both locally and in the database.
+model Team {
+  id        String   @id
+  name      String
+  data      Json
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

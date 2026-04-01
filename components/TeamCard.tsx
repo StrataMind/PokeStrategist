@@ -37,6 +37,7 @@ export default function TeamCard({
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const totalStats = team.pokemon.reduce(
     (sum, p) => sum + Object.values(p.stats).reduce((a, b) => a + b, 0),
@@ -45,6 +46,11 @@ export default function TeamCard({
   const avgStat = team.pokemon.length > 0 ? Math.round(totalStats / team.pokemon.length) : 0;
   const validation = getFormatBadge(team);
   const coverage = getTeamCoverage(team);
+
+  // Preview logic: show first 6 slots when collapsed
+  const PREVIEW_SLOTS = 6;
+  const slotsToShow = isExpanded ? team.maxSize : Math.min(PREVIEW_SLOTS, team.maxSize);
+  const hiddenSlotsCount = team.maxSize - slotsToShow;
 
   const handleRename = () => {
     if (editingName.trim()) {
@@ -147,7 +153,7 @@ export default function TeamCard({
         }}
       >
         <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: 'var(--ink-muted)' }}>
-          {team.pokemon.length}/6 Pokémon
+          {team.pokemon.length}/{team.maxSize} Pokémon
         </span>
         {avgStat > 0 && (
           <span
@@ -199,8 +205,18 @@ export default function TeamCard({
       )}
 
       {/* Pokemon grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'var(--border)' }}>
-        {Array.from({ length: team.maxSize }).map((_, i) => (
+      <div 
+        style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(3, 1fr)', 
+          gap: '1px', 
+          background: 'var(--border)',
+          cursor: hiddenSlotsCount > 0 ? 'pointer' : 'default',
+        }}
+        onClick={() => hiddenSlotsCount > 0 && setIsExpanded(!isExpanded)}
+        title={hiddenSlotsCount > 0 ? (isExpanded ? 'Click to collapse' : `Click to view all ${team.maxSize} slots`) : ''}
+      >
+        {Array.from({ length: slotsToShow }).map((_, i) => (
           <div
             key={i}
             style={{
@@ -228,6 +244,25 @@ export default function TeamCard({
             )}
           </div>
         ))}
+        {/* Show "+X more" indicator in the last slot when collapsed */}
+        {!isExpanded && hiddenSlotsCount > 0 && (
+          <div
+            style={{
+              background: 'var(--parchment)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0.75rem',
+              aspectRatio: '1',
+              borderLeft: '2px dashed var(--gold)',
+              borderTop: '2px dashed var(--gold)',
+            }}
+          >
+            <span style={{ fontSize: '1.2rem', color: 'var(--gold)', fontWeight: 700 }}>+{hiddenSlotsCount}</span>
+            <span style={{ fontSize: '0.6rem', color: 'var(--ink-muted)', fontFamily: "'DM Mono', monospace", marginTop: '0.25rem' }}>more</span>
+          </div>
+        )}
       </div>
 
       {/* Action buttons */}
