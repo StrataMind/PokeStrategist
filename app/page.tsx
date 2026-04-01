@@ -11,6 +11,7 @@ import AutoSaveIndicator from '@/components/AutoSaveIndicator';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import StorageWarning from '@/components/StorageWarning';
+import SyncStatus from '@/components/SyncStatus';
 import Sidebar from '@/components/Sidebar';
 import TeamCard from '@/components/TeamCard';
 import { useIsMobile } from '@/lib/hooks/useIsMobile';
@@ -19,7 +20,7 @@ export default function Home() {
   const { data: session } = useSession();
   const {
     teams, loadTeams, syncToDrive, loadFromDrive,
-    setUserId, loadFromDb,
+    setUserId, loadFromDb, manualSync,
     createTeam, deleteTeam, duplicateTeam, toggleFavorite, renameTeam,
     exportTeam, importTeam, exportAllTeams, bulkDelete, bulkExport, bulkFavorite,
     undo, redo, theme, toggleTheme,
@@ -215,6 +216,8 @@ export default function Home() {
 
           <button onClick={undo} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem', color: 'var(--ink-muted)', cursor: 'pointer', flexShrink: 0 }} title="Undo (Ctrl+Z)">↶</button>
           <button onClick={redo} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem', color: 'var(--ink-muted)', cursor: 'pointer', flexShrink: 0 }} title="Redo (Ctrl+Y)">↷</button>
+
+          {!isMobile && <SyncStatus onManualSync={manualSync} userId={session?.userId as string | null} />}
 
           {!isMobile && (
             <button onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.45rem', color: 'var(--ink-muted)', cursor: 'pointer' }} title="Keyboard Shortcuts (?)">⌨</button>

@@ -21,13 +21,23 @@ function scheduleDbSync(teams: Team[]): void {
   clearTimeout(_dbSyncTimer);
   _dbSyncTimer = setTimeout(async () => {
     try {
-      await fetch('/api/teams', {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('sync:start'));
+      }
+      const res = await fetch('/api/teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teams }),
       });
+      if (!res.ok) throw new Error(`Sync failed: ${res.status}`);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('sync:success'));
+      }
     } catch (e) {
       console.error('DB sync failed:', e);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('sync:error'));
+      }
     }
   }, 2000);
 }
@@ -42,6 +52,7 @@ interface TeamStore {
   setUserId: (userId: string | null) => void;
   loadTeams: () => void;
   loadFromDb: () => Promise<void>;
+  manualSync: () => Promise<void>;
   syncToDrive: (accessToken: string) => Promise<void>;
   loadFromDrive: (accessToken: string) => Promise<void>;
   createTeam: (name: string, maxSize: number) => void;
@@ -112,6 +123,34 @@ export const useTeamStore = create<TeamStore>((set, get) => {
         const teams = JSON.parse(stored);
         set({ teams, history: [teams], historyIndex: 0 });
       }
+    }
+  },
+
+  manualSync: async () => {
+    const { teams, userId } = get();
+    if (!userId) throw new Error('Not authenticated');
+    
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sync:start'));
+    }
+    
+    try {
+      const res = await fetch('/api/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teams }),
+      });
+      
+      if (!res.ok) throw new Error(`Sync failed: ${res.status}`);
+      
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('sync:success'));
+      }
+    } catch (error) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('sync:error'));
+      }
+      throw error;
     }
   },
 
