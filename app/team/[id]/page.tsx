@@ -13,6 +13,7 @@ import { getPokemonRegion, POKEMON_REGIONS, Region } from '@/lib/data/regions';
 import { useIsMobile } from '@/lib/hooks/useIsMobile';
 import TypeCoverageWidget from '@/components/TypeCoverageWidget';
 import TeamSynergyScore from '@/components/TeamSynergyScore';
+import MoveSuggestions from '@/components/MoveSuggestions';
 
 export default function TeamEditor() {
   const params = useParams();
@@ -587,22 +588,38 @@ export default function TeamEditor() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Moves (Select up to 4) - {selectedMoves.length}/4</label>
-                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-lg p-2">
-                    {editingPokemon.moves?.slice(0, 30).map(move => {
-                      const moveName = typeof move === 'string' ? move : move.name;
-                      return (
-                        <label key={moveName} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            className="rounded" 
-                            checked={selectedMoves.includes(moveName)}
-                            onChange={() => handleMoveToggle(moveName)}
-                            disabled={!selectedMoves.includes(moveName) && selectedMoves.length >= 4}
-                          />
-                          <span className="text-sm capitalize">{moveName.replace('-', ' ')}</span>
-                        </label>
-                      );
-                    })}
+                  
+                  {/* Move Suggestions Widget */}
+                  {team && (
+                    <MoveSuggestions 
+                      pokemon={editingPokemon}
+                      teamPokemon={team.pokemon}
+                      onSelectMove={handleMoveToggle}
+                      selectedMoves={selectedMoves}
+                    />
+                  )}
+                  
+                  <div style={{ marginTop: '1rem' }}>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink-muted)' }}>
+                      Or choose from all available moves:
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-lg p-2">
+                      {editingPokemon.moves?.slice(0, 30).map(move => {
+                        const moveName = typeof move === 'string' ? move : move.name;
+                        return (
+                          <label key={moveName} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="rounded" 
+                              checked={selectedMoves.includes(moveName)}
+                              onChange={() => handleMoveToggle(moveName)}
+                              disabled={!selectedMoves.includes(moveName) && selectedMoves.length >= 4}
+                            />
+                            <span className="text-sm capitalize">{moveName.replace('-', ' ')}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
