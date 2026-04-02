@@ -11,6 +11,7 @@ import { getTypeColor } from '@/lib/utils';
 import { NATURES, POPULAR_ITEMS } from '@/lib/data/gameData';
 import { getPokemonRegion, POKEMON_REGIONS, Region } from '@/lib/data/regions';
 import { useIsMobile } from '@/lib/hooks/useIsMobile';
+import TypeCoverageWidget from '@/components/TypeCoverageWidget';
 
 export default function TeamEditor() {
   const params = useParams();
@@ -177,6 +178,11 @@ export default function TeamEditor() {
       </header>
 
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
+        {/* Type Coverage Widget - Always visible at top */}
+        <div style={{ marginBottom: '2rem' }}>
+          <TypeCoverageWidget pokemon={team.pokemon} />
+        </div>
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           {team.pokemon.length > 0 && (
             <select
