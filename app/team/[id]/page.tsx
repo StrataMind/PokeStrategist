@@ -12,6 +12,7 @@ import { NATURES, POPULAR_ITEMS } from '@/lib/data/gameData';
 import { getPokemonRegion, POKEMON_REGIONS, Region } from '@/lib/data/regions';
 import { useIsMobile } from '@/lib/hooks/useIsMobile';
 import TypeCoverageWidget from '@/components/TypeCoverageWidget';
+import TeamSynergyScore from '@/components/TeamSynergyScore';
 
 export default function TeamEditor() {
   const params = useParams();
@@ -178,9 +179,10 @@ export default function TeamEditor() {
       </header>
 
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
-        {/* Type Coverage Widget - Always visible at top */}
-        <div style={{ marginBottom: '2rem' }}>
+        {/* Analytics Widgets */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
           <TypeCoverageWidget pokemon={team.pokemon} />
+          <TeamSynergyScore pokemon={team.pokemon} maxSize={team.maxSize} />
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
