@@ -6,6 +6,7 @@ import { ArrowLeft, Search } from 'lucide-react';
 import { getTypeColor } from '@/lib/utils';
 import Toast from '@/components/Toast';
 import { useTeamStore } from '@/lib/store/teamStore';
+import PokemonFormsModal from '@/components/PokemonFormsModal';
 
 interface PokemonEntry {
   id: number;
@@ -29,6 +30,7 @@ export default function Pokedex() {
   const [toast, setToast] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [itemsPerPage] = useState(100);
+  const [showFormsModal, setShowFormsModal] = useState<string | null>(null);
 
   const regions = [
     { name: 'all', label: 'All Regions', range: [1, 10000] },
@@ -471,6 +473,38 @@ export default function Pokedex() {
                   >
                     + Add to Team
                   </button>
+                  
+                  {/* View Forms button for Pokemon with variants */}
+                  {!p.isVariant && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowFormsModal(p.name);
+                      }}
+                      style={{ 
+                        marginTop: '0.5rem', 
+                        width: '100%', 
+                        padding: '0.5rem', 
+                        border: '1px solid var(--border)', 
+                        background: 'var(--cream)', 
+                        color: 'var(--ink)', 
+                        fontFamily: "'DM Mono', monospace", 
+                        fontSize: '0.65rem', 
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--gold)';
+                        e.currentTarget.style.background = 'var(--parchment)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--border)';
+                        e.currentTarget.style.background = 'var(--cream)';
+                      }}
+                    >
+                      🔍 View Forms
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -553,6 +587,13 @@ export default function Pokedex() {
       )}
 
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      
+      {showFormsModal && (
+        <PokemonFormsModal 
+          baseName={showFormsModal} 
+          onClose={() => setShowFormsModal(null)} 
+        />
+      )}
     </div>
   );
 }
