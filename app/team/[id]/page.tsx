@@ -35,6 +35,7 @@ export default function TeamEditor() {
   const [selectedMoves, setSelectedMoves] = useState<string[]>([]);
   const [filterType, setFilterType] = useState<string>('');
   const [viewMode, setViewMode] = useState<'regions' | 'grid'>('regions');
+  const [recentlyAdded, setRecentlyAdded] = useState<Pokemon[]>([]);
 
   const handleRandomTeam = async () => {
     if (team && team.pokemon.length < team.maxSize) {
@@ -121,9 +122,17 @@ export default function TeamEditor() {
   const handleAddPokemon = (pokemon: Pokemon) => {
     if (team && team.pokemon.length < team.maxSize) {
       addPokemon(team.id, { ...pokemon, position: team.pokemon.length });
-      setShowSearch(false);
+      
+      // Add to recently added list (max 6)
+      setRecentlyAdded(prev => {
+        const updated = [pokemon, ...prev.filter(p => p.id !== pokemon.id)];
+        return updated.slice(0, 6);
+      });
+      
+      // Clear search but keep modal open
       setSearchQuery('');
       setSearchResults([]);
+      setSuggestions([]);
     }
   };
 
@@ -430,6 +439,7 @@ export default function TeamEditor() {
                     onChange={(e) => handleSearchChange(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                     placeholder="Search Pokémon..."
+                    autoFocus
                     style={{ width: '100%', padding: '0.75rem', border: '1px solid var(--border)', borderBottom: '2px solid var(--ink-muted)', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', outline: 'none' }}
                   />
                   {suggestions.length > 0 && (
@@ -457,13 +467,39 @@ export default function TeamEditor() {
                 </button>
               </div>
 
+              {/* Recently Added Section */}
+              {recentlyAdded.length > 0 && searchResults.length === 0 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--ink)' }}>
+                    ⚡ Recently Added
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.75rem' }}>
+                    {recentlyAdded.map(pokemon => (
+                      <button
+                        key={pokemon.id}
+                        onClick={() => handleAddPokemon(pokemon)}
+                        disabled={team.pokemon.length >= team.maxSize}
+                        style={{ background: 'var(--cream)', border: '1px solid var(--border)', padding: '0.75rem', cursor: team.pokemon.length >= team.maxSize ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: team.pokemon.length >= team.maxSize ? 0.5 : 1 }}
+                        onMouseEnter={(e) => team.pokemon.length < team.maxSize && (e.currentTarget.style.borderColor = 'var(--gold)')}
+                        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+                      >
+                        <img src={pokemon.sprite} alt={pokemon.name} style={{ width: '100%', height: '64px', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                        <h3 style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', textAlign: 'center', marginTop: '0.25rem', textTransform: 'capitalize', color: 'var(--ink)' }}>{pokemon.name}</h3>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Search Results */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
                 {searchResults.map(pokemon => (
                   <button
                     key={pokemon.id}
                     onClick={() => handleAddPokemon(pokemon)}
-                    style={{ background: 'white', border: '1px solid var(--border)', padding: '1rem', cursor: 'pointer', transition: 'all 0.15s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--gold)'}
+                    disabled={team.pokemon.length >= team.maxSize}
+                    style={{ background: 'white', border: '1px solid var(--border)', padding: '1rem', cursor: team.pokemon.length >= team.maxSize ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: team.pokemon.length >= team.maxSize ? 0.5 : 1 }}
+                    onMouseEnter={(e) => team.pokemon.length < team.maxSize && (e.currentTarget.style.borderColor = 'var(--gold)')}
                     onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
                   >
                     <img src={pokemon.sprite} alt={pokemon.name} style={{ width: '100%', height: '96px', objectFit: 'contain', imageRendering: 'pixelated' }} />
