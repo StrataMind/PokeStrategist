@@ -59,9 +59,10 @@ function normalizePokemon(input: unknown, index: number): TeamPokemon {
 
 function normalizeTeam(input: unknown): Team {
   const candidate = (input ?? {}) as Partial<Team>;
-  const maxSize = Math.max(1, Math.min(6, Math.floor(toNumber(candidate.maxSize, 6))));
   const rawPokemon = Array.isArray(candidate.pokemon) ? candidate.pokemon : [];
   const pokemon = rawPokemon.map((p, i) => normalizePokemon(p, i)).map((p, i) => ({ ...p, position: i }));
+  const requestedMaxSize = Math.floor(toNumber(candidate.maxSize, pokemon.length || 6));
+  const maxSize = Math.max(1, Math.max(requestedMaxSize, pokemon.length));
 
   return {
     id: typeof candidate.id === 'string' ? candidate.id : Date.now().toString(),
