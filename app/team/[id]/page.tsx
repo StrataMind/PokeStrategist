@@ -331,7 +331,7 @@ export default function TeamEditor() {
                                 {pokemon.nickname || pokemon.name}
                               </h4>
                               <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                                {pokemon.types.map(type => (
+                                {(pokemon.types ?? []).map(type => (
                                   <span key={type} style={{ fontSize: '0.6rem', padding: '2px 6px', background: getTypeColor(type).replace('bg-', ''), color: 'white', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace", borderRadius: '2px' }}>
                                     {type}
                                   </span>
@@ -411,7 +411,7 @@ export default function TeamEditor() {
                           {pokemon.nickname || pokemon.name}
                         </h4>
                         <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                          {pokemon.types.map(type => (
+                          {(pokemon.types ?? []).map(type => (
                             <span key={type} style={{ fontSize: '0.6rem', padding: '2px 6px', background: getTypeColor(type).replace('bg-', ''), color: 'white', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace", borderRadius: '2px' }}>
                               {type}
                             </span>
@@ -523,7 +523,7 @@ export default function TeamEditor() {
                     <img src={pokemon.sprite} alt={pokemon.name} style={{ width: '100%', height: '96px', objectFit: 'contain', imageRendering: 'pixelated' }} />
                     <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.9rem', fontWeight: 700, textAlign: 'center', marginTop: '0.5rem', textTransform: 'capitalize' }}>{pokemon.name}</h3>
                     <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', marginTop: '0.5rem' }}>
-                      {pokemon.types.map(type => (
+                      {(pokemon.types ?? []).map(type => (
                         <span key={type} style={{ fontSize: '0.6rem', padding: '2px 6px', background: getTypeColor(type).replace('bg-', ''), color: 'white', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
                           {type}
                         </span>
@@ -567,7 +567,7 @@ export default function TeamEditor() {
                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none capitalize"
                   >
                     <option value="">Select ability...</option>
-                    {editingPokemon.abilities.map(ability => (
+                    {(editingPokemon.abilities ?? []).map(ability => (
                       <option key={ability} value={ability} className="capitalize">{ability.replace('-', ' ')}</option>
                     ))}
                   </select>
@@ -668,7 +668,7 @@ export default function TeamEditor() {
                 <div>
                   <h3 className="font-semibold text-sm text-gray-600 mb-2">Types</h3>
                   <div className="flex gap-2">
-                    {viewingPokemon.types.map(type => (
+                    {(viewingPokemon.types ?? []).map(type => (
                       <span key={type} className={`${getTypeColor(type)} text-white px-3 py-1 rounded capitalize`}>
                         {type}
                       </span>

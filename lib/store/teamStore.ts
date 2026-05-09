@@ -2,6 +2,83 @@ import { create } from 'zustand';
 import { Team, TeamPokemon } from '@/types/team';
 import { parseShowdown, exportShowdown } from '@/lib/utils/showdown';
 
+const DEFAULT_STATS: TeamPokemon['stats'] = {
+  hp: 100,
+  attack: 100,
+  defense: 100,
+  specialAttack: 100,
+  specialDefense: 100,
+  speed: 100,
+};
+
+function toNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function normalizePokemon(input: unknown, index: number): TeamPokemon {
+  const candidate = (input ?? {}) as Partial<TeamPokemon>;
+  const normalizedMoves = Array.isArray(candidate.moves) ? candidate.moves : [];
+  const normalizedSelectedMoves = Array.isArray(candidate.selectedMoves)
+    ? candidate.selectedMoves.filter((move): move is string => typeof move === 'string')
+    : undefined;
+
+  return {
+    id: candidate.id ?? `pokemon-${index}`,
+    name: typeof candidate.name === 'string' ? candidate.name : 'unknown',
+    types: Array.isArray(candidate.types)
+      ? candidate.types.filter((type): type is string => typeof type === 'string')
+      : [],
+    sprite: typeof candidate.sprite === 'string' ? candidate.sprite : '',
+    stats: {
+      hp: toNumber(candidate.stats?.hp, DEFAULT_STATS.hp),
+      attack: toNumber(candidate.stats?.attack, DEFAULT_STATS.attack),
+      defense: toNumber(candidate.stats?.defense, DEFAULT_STATS.defense),
+      specialAttack: toNumber(candidate.stats?.specialAttack, DEFAULT_STATS.specialAttack),
+      specialDefense: toNumber(candidate.stats?.specialDefense, DEFAULT_STATS.specialDefense),
+      speed: toNumber(candidate.stats?.speed, DEFAULT_STATS.speed),
+    },
+    abilities: Array.isArray(candidate.abilities)
+      ? candidate.abilities.filter((ability): ability is string => typeof ability === 'string')
+      : [],
+    height: toNumber(candidate.height, 0),
+    weight: toNumber(candidate.weight, 0),
+    moves: normalizedMoves,
+    position: toNumber(candidate.position, index),
+    isShiny: candidate.isShiny,
+    nickname: candidate.nickname,
+    selectedMoves: normalizedSelectedMoves,
+    selectedAbility: candidate.selectedAbility,
+    item: candidate.item,
+    nature: candidate.nature,
+    evs: candidate.evs,
+    ivs: candidate.ivs,
+    caughtRank: typeof candidate.caughtRank === 'number' ? candidate.caughtRank : undefined,
+    caughtNote: typeof candidate.caughtNote === 'string' ? candidate.caughtNote : undefined,
+  };
+}
+
+function normalizeTeam(input: unknown): Team {
+  const candidate = (input ?? {}) as Partial<Team>;
+  const maxSize = Math.max(1, Math.min(6, Math.floor(toNumber(candidate.maxSize, 6))));
+  const rawPokemon = Array.isArray(candidate.pokemon) ? candidate.pokemon : [];
+  const pokemon = rawPokemon.map((p, i) => normalizePokemon(p, i)).map((p, i) => ({ ...p, position: i }));
+
+  return {
+    id: typeof candidate.id === 'string' ? candidate.id : Date.now().toString(),
+    name: typeof candidate.name === 'string' ? candidate.name : 'Untitled Team',
+    maxSize,
+    pokemon,
+    createdAt: typeof candidate.createdAt === 'string' ? candidate.createdAt : new Date().toISOString(),
+    updatedAt: typeof candidate.updatedAt === 'string' ? candidate.updatedAt : new Date().toISOString(),
+    favorite: candidate.favorite,
+  };
+}
+
+function normalizeTeams(input: unknown): Team[] {
+  if (!Array.isArray(input)) return [];
+  return input.map((team) => normalizeTeam(team));
+}
+
 // Debounced localStorage writer — batches rapid updates into a single write
 let _persistTimer: ReturnType<typeof setTimeout>;
 function persistTeams(teams: Team[]): void {
@@ -82,8 +159,9 @@ interface TeamStore {
 export const useTeamStore = create<TeamStore>((set, get) => {
   // Persists to localStorage AND schedules a DB sync when user is authenticated
   const saveAndSync = (teams: Team[]) => {
-    persistTeams(teams);
-    if (get().userId) scheduleDbSync(teams);
+    const normalizedTeams = normalizeTeams(teams);
+    persistTeams(normalizedTeams);
+    if (get().userId) scheduleDbSync(normalizedTeams);
   };
 
   return ({
@@ -103,10 +181,11 @@ export const useTeamStore = create<TeamStore>((set, get) => {
       const { teams: dbTeams } = await res.json();
       if (Array.isArray(dbTeams) && dbTeams.length > 0) {
         // Merge: DB teams take precedence; keep any local-only teams as well
+        const normalizedDbTeams = normalizeTeams(dbTeams);
         const localTeams = get().teams;
-        const dbIds = new Set(dbTeams.map((t: Team) => t.id));
+        const dbIds = new Set(normalizedDbTeams.map((t: Team) => t.id));
         const localOnly = localTeams.filter((t) => !dbIds.has(t.id));
-        const merged = [...dbTeams, ...localOnly];
+        const merged = normalizeTeams([...normalizedDbTeams, ...localOnly]);
         set({ teams: merged, history: [merged], historyIndex: 0 });
         persistTeams(merged);
         // Push any local-only teams up to the DB
@@ -121,7 +200,7 @@ export const useTeamStore = create<TeamStore>((set, get) => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('teams');
       if (stored) {
-        const teams = JSON.parse(stored);
+        const teams = normalizeTeams(JSON.parse(stored));
         set({ teams, history: [teams], historyIndex: 0 });
       }
     }
@@ -179,8 +258,9 @@ export const useTeamStore = create<TeamStore>((set, get) => {
       if (!res.ok) throw new Error(`Drive load failed: ${res.status}`);
       const data = await res.json();
       if (data.success && data.teams?.length > 0) {
-        set({ teams: data.teams });
-        persistTeams(data.teams);
+        const normalizedTeams = normalizeTeams(data.teams);
+        set({ teams: normalizedTeams });
+        persistTeams(normalizedTeams);
       }
     } catch (error) {
       console.error('Drive load error:', error);
@@ -249,12 +329,13 @@ export const useTeamStore = create<TeamStore>((set, get) => {
   addPokemon: (teamId: string, pokemon: TeamPokemon) => {
     const teams = get().teams.map(team => {
       if (team.id === teamId && team.pokemon.length < team.maxSize) {
+        const normalizedPokemon = normalizePokemon(pokemon, team.pokemon.length);
         return {
           ...team,
           pokemon: [...team.pokemon, {
-            ...pokemon,
+            ...normalizedPokemon,
             position: team.pokemon.length,
-            caughtRank: pokemon.caughtRank ?? team.pokemon.length,
+            caughtRank: normalizedPokemon.caughtRank ?? team.pokemon.length,
           }],
           updatedAt: new Date().toISOString(),
         };
@@ -316,7 +397,7 @@ export const useTeamStore = create<TeamStore>((set, get) => {
         return {
           ...team,
           pokemon: team.pokemon.map(p => 
-            p.position === position ? { ...p, ...updates } : p
+            p.position === position ? normalizePokemon({ ...p, ...updates }, p.position) : p
           ),
           updatedAt: new Date().toISOString(),
         };
@@ -358,10 +439,13 @@ export const useTeamStore = create<TeamStore>((set, get) => {
 
   importTeam: (jsonData: string) => {
     try {
-      const team = JSON.parse(jsonData);
-      team.id = Date.now().toString();
-      team.createdAt = new Date().toISOString();
-      team.updatedAt = new Date().toISOString();
+      const parsedTeam = JSON.parse(jsonData);
+      const team = normalizeTeam({
+        ...parsedTeam,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
       const teams = [...get().teams, team];
       set({ teams });
       saveAndSync(teams);
@@ -381,7 +465,7 @@ export const useTeamStore = create<TeamStore>((set, get) => {
         id: Date.now().toString(),
         name: parsed.name || 'Showdown Import',
         maxSize: parsed.maxSize || 6,
-        pokemon: parsed.pokemon || [],
+        pokemon: normalizeTeams([{ pokemon: parsed.pokemon || [] }])[0].pokemon,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
