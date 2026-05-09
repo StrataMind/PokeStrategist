@@ -65,6 +65,7 @@ interface TeamStore {
   removePokemon: (teamId: string, position: number) => void;
   reorderPokemon: (teamId: string, fromPos: number, toPos: number) => void;
   updatePokemon: (teamId: string, position: number, updates: Partial<TeamPokemon>) => void;
+  setCaughtRanking: (teamId: string, orderedPositions: number[]) => void;
   exportTeam: (teamId: string) => string;
   importTeam: (jsonData: string) => void;
   exportAllTeams: () => string;
@@ -250,7 +251,11 @@ export const useTeamStore = create<TeamStore>((set, get) => {
       if (team.id === teamId && team.pokemon.length < team.maxSize) {
         return {
           ...team,
-          pokemon: [...team.pokemon, { ...pokemon, position: team.pokemon.length }],
+          pokemon: [...team.pokemon, {
+            ...pokemon,
+            position: team.pokemon.length,
+            caughtRank: pokemon.caughtRank ?? team.pokemon.length,
+          }],
           updatedAt: new Date().toISOString(),
         };
       }
@@ -263,9 +268,21 @@ export const useTeamStore = create<TeamStore>((set, get) => {
   removePokemon: (teamId: string, position: number) => {
     const teams = get().teams.map(team => {
       if (team.id === teamId) {
+        const remaining = team.pokemon.filter(p => p.position !== position);
+        const normalizedCaughtOrder = [...remaining]
+          .sort((a, b) => (a.caughtRank ?? a.position) - (b.caughtRank ?? b.position))
+          .map(p => p.position);
+        const caughtRankMap = new Map<number, number>(
+          normalizedCaughtOrder.map((pokemonPosition, rank) => [pokemonPosition, rank])
+        );
+
         return {
           ...team,
-          pokemon: team.pokemon.filter(p => p.position !== position).map((p, i) => ({ ...p, position: i })),
+          pokemon: remaining.map((p, i) => ({
+            ...p,
+            position: i,
+            caughtRank: caughtRankMap.get(p.position) ?? i,
+          })),
           updatedAt: new Date().toISOString(),
         };
       }
@@ -306,6 +323,29 @@ export const useTeamStore = create<TeamStore>((set, get) => {
       }
       return team;
     });
+    set({ teams });
+    saveAndSync(teams);
+  },
+
+  setCaughtRanking: (teamId: string, orderedPositions: number[]) => {
+    const rankMap = new Map<number, number>(
+      orderedPositions.map((position, rank) => [position, rank])
+    );
+
+    const teams = get().teams.map(team => {
+      if (team.id === teamId) {
+        return {
+          ...team,
+          pokemon: team.pokemon.map(p => ({
+            ...p,
+            caughtRank: rankMap.get(p.position) ?? p.caughtRank ?? p.position,
+          })),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return team;
+    });
+
     set({ teams });
     saveAndSync(teams);
   },

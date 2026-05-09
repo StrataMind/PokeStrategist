@@ -182,10 +182,27 @@ export default function TeamEditor() {
         <Link href="/" style={{ color: 'var(--ink-muted)', textDecoration: 'none' }}>
           <ArrowLeft size={20} />
         </Link>
-        <div>
+        <div style={{ flex: 1 }}>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', fontWeight: 700, color: 'var(--ink)' }}>{team.name}</h1>
           <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', color: 'var(--ink-muted)', letterSpacing: '0.1em' }}>{team.pokemon.length}/{team.maxSize} Pokémon</p>
         </div>
+        <Link
+          href={`/team/${team.id}/caught`}
+          style={{
+            background: 'var(--ink)',
+            border: '2px solid var(--gold)',
+            color: 'var(--gold)',
+            padding: '0.45rem 0.75rem',
+            fontFamily: "'DM Mono', monospace",
+            fontSize: '0.7rem',
+            letterSpacing: '0.08em',
+            textDecoration: 'none',
+            boxShadow: '2px 2px 0 var(--gold-dark)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          CAUGHT RANK
+        </Link>
       </header>
 
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>

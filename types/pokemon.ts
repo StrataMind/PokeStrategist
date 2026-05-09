@@ -28,6 +28,8 @@ export interface Move {
 
 export interface TeamPokemon extends Pokemon {
   position: number;
+  caughtRank?: number;
+  caughtNote?: string;
   isShiny?: boolean;
   nickname?: string;
   selectedMoves?: string[];
